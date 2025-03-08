@@ -6,8 +6,8 @@ import domainmodeling.healthcheck.Infra.Kafka.{BootstrapServers, Topic}
 import domainmodeling.healthcheck.Infra.HttpConnection.Url
 
 object Dsl:
-  def dbErrorCondition(dbType: DbType, connectionString: ConnectionString, creds: Credentials): ErrorCondition =
-    DBErrorCondition(DbType.Postgres, connectionString, creds)
+  def dbErrorCondition(dbType: DbType): ErrorCondition =
+    DBErrorCondition(DbType.Postgres)
 
   def kafkaErrorCondition(topic: Topic, bootstrapServers: BootstrapServers): ErrorCondition =
     KafkaErrorCondition(topic, bootstrapServers)
