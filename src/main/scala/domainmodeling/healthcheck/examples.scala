@@ -13,7 +13,7 @@ object Example1 {
   val kafkaTopic = Topic("events")
   val kafkaBootstrapServers = BootstrapServers("kafka:9092")
   
-  val errorCondition = dbErrorCondition(dbType, dbConnectionString, dbCreds) || kafkaErrorCondition(kafkaTopic, kafkaBootstrapServers)
+  val errorCondition = dbErrorCondition(dbType, TableName("user"), TableName("access_token")) || kafkaErrorCondition(kafkaTopic, kafkaBootstrapServers)
 }
 
 object Example2 {
@@ -23,6 +23,6 @@ object Example2 {
   val dbConnectionString = ConnectionString("jdbc:postgresql://localhost:3306/myMysqlDb")
   val dbCreds = Credentials(Username("user"), Password("password"))
   
-  val errorCondition = dbErrorCondition(dbType, dbConnectionString, dbCreds) || getHttp2xx(Url("https://httpbin.org/status/200"))
+  val errorCondition = dbErrorCondition(dbType, TableName("user"), TableName("access_token")) || getHttp2xx(Url("https://httpbin.org/status/200"))
 
 }

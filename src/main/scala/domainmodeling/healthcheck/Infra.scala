@@ -1,6 +1,6 @@
 package domainmodeling.healthcheck
 
-import neotype.Newtype
+import neotype.*
 
 object Infra:
   object Db:
@@ -14,6 +14,8 @@ object Infra:
     object Password extends Newtype[String]
     type Password = Password.Type
     case class Credentials(username: Username, password: Password)
+    object TableName extends Newtype[String]
+    type TableName = TableName.Type
   
   object Kafka:
     object Topic extends Newtype[String]

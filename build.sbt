@@ -3,7 +3,7 @@ ThisBuild / version          := "0.1.0-SNAPSHOT"
 ThisBuild / organization     := "com.example"
 ThisBuild / organizationName := "example"
 
-val doobieV = "1.0.0-RC8"
+val doobieV = "1.0.0-RC7"
 
 lazy val root = (project in file("."))
   .settings(
@@ -11,6 +11,7 @@ lazy val root = (project in file("."))
     libraryDependencies ++= Seq(
       "dev.zio"              %% "zio"                  % "2.1.1",
       "io.github.kitlangton" %% "neotype"              % "0.3.15",
+      "io.github.kitlangton" %% "neotype-doobie"       % "0.3.15",
       "org.tpolecat"         %% "doobie-core"          % doobieV,
       "org.tpolecat"         %% "doobie-hikari"        % doobieV,
       "org.tpolecat"         %% "doobie-postgres"      % doobieV,
