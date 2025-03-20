@@ -36,7 +36,6 @@ object DoobieZIOdBHealthcheck {
 
   def status(
               checkTx: TableName => ConnectionIO[Boolean],
-              tx: Transactor[Task],
               checkTables: List[TableName]
             ): ZIO[Transactor[Task], Nothing, List[StatusError]] =
     for {

@@ -21,4 +21,4 @@ Each approach has its plus and minuses, however Declarative encoding makes the s
 - Find a way to compute at compile-time the requirements for the interpreter, so we don't have to pass unnecessary requirements in the environment
 - Implement as a mermaid
 - Implement as a fully fledged laminar UI that embeds a mermaid diagram. Dynamically traverse this diagram in a step-by-step fashion, as in a debugger with fwd/bwd functionality and key bindings
-- 
+- Laws: Chcck a list of 2 topics is the same as checking each topic individually and joining them through an `||`
