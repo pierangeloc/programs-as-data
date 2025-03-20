@@ -9,7 +9,7 @@ object Dsl:
   def dbErrorCondition(dbType: DbType, checkTables: TableName*): ErrorCondition =
     DBErrorCondition(DbType.Postgres, checkTables.toList)
 
-  def kafkaErrorCondition(topic: Topic, bootstrapServers: BootstrapServers): ErrorCondition =
-    KafkaErrorCondition(topic, bootstrapServers)
+  def kafkaErrorCondition(topics: Topic*): ErrorCondition =
+    KafkaErrorCondition(topics.toList)
 
   def getHttp2xx(url: Url): ErrorCondition = ExternalHttpErrorCondition(url)

@@ -16,3 +16,9 @@ Each approach has its plus and minuses, however Declarative encoding makes the s
 - We can provide different interpretations, e.g. one as a running program, and one to render the program in a visually convenient way
 - we can optimize before blindly executing complex rules
 
+
+# IDEA for the rule engine example
+- Find a way to compute at compile-time the requirements for the interpreter, so we don't have to pass unnecessary requirements in the environment
+- Implement as a mermaid
+- Implement as a fully fledged laminar UI that embeds a mermaid diagram. Dynamically traverse this diagram in a step-by-step fashion, as in a debugger with fwd/bwd functionality and key bindings
+- 

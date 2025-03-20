@@ -1,0 +1,3 @@
+package domainmodeling.healthcheck.db
+
+class SlickFutureDbHealthCheck

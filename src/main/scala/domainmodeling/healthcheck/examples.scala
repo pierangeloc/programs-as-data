@@ -13,7 +13,7 @@ object Example1 {
   val kafkaTopic = Topic("events")
   val kafkaBootstrapServers = BootstrapServers("kafka:9092")
   
-  val errorCondition = dbErrorCondition(dbType, TableName("user"), TableName("access_token")) || kafkaErrorCondition(kafkaTopic, kafkaBootstrapServers)
+  val errorCondition = dbErrorCondition(dbType, TableName("user"), TableName("access_token")) || kafkaErrorCondition(kafkaTopic)
 }
 
 object Example2 {
