@@ -9,9 +9,9 @@ import neotype.*
 
 
 object SttpHealthCheck {
-  def check(url: Url): URIO[HttpClientZioBackend, List[StatusError]] =
+  def check(url: Url): URIO[SttpClient, List[StatusError]] =
   for {
-    be <- ZIO.service[HttpClientZioBackend]
+    be <- ZIO.service[SttpClient]
     res <-   basicRequest
       .response(asStringAlways)
       .get(uri"${url.unwrap}")
