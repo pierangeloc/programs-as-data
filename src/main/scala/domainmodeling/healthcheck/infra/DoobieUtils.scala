@@ -1,7 +1,7 @@
 package domainmodeling.healthcheck.infra
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
-import domainmodeling.healthcheck.Infra.Db.DbType
+import domainmodeling.healthcheck.InfraModel.Db.DbType
 import doobie.Transactor
 import doobie.hikari.HikariTransactor
 import doobie.util.log.LogEvent
@@ -46,7 +46,7 @@ object Doobie {
                     ZIO.logErrorCause("Error processing query. SQL = " + sql, Cause.die(failure))
                   case doobie.util.log.ExecFailure(sql, _, _, _, failure) =>
                     ZIO.logErrorCause("Error executing query. SQL = " + sql, Cause.die(failure))
-                  case doobie.util.log.Success(_, _, _, _, _) =>
+                  case doobie.util.log.Success(sql, params, _, _, _) =>
                     ZIO.unit
                 }
               )

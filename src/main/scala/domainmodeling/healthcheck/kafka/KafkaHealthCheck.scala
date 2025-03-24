@@ -1,6 +1,6 @@
 package domainmodeling.healthcheck.kafka
 
-import domainmodeling.healthcheck.Infra.Kafka.Topic
+import domainmodeling.healthcheck.InfraModel.Kafka.Topic
 import domainmodeling.healthcheck.{Message, Source, StatusError}
 import zio.*
 import zio.kafka.admin.*

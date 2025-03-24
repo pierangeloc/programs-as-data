@@ -2,7 +2,7 @@ package domainmodeling.healthcheck
 
 import neotype.*
 
-object Infra:
+object InfraModel:
   object Db:
     enum DbType:
       case Postgres, MySql

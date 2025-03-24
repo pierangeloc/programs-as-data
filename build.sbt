@@ -20,6 +20,8 @@ lazy val root = (project in file("."))
       "mysql"                          % "mysql-connector-java"          % "8.0.33",
       "dev.zio"                       %% "zio-test"                      % "2.1.1" % Test,
       "dev.zio"                       %% "zio-kafka"                     % "2.11.0",
+      "dev.zio"                       %% "zio-logging-slf4j"             % "2.5.0",
+      "ch.qos.logback"                 % "logback-classic"               % "1.5.6",
       "com.softwaremill.sttp.client3" %% "async-http-client-backend-zio" % "3.10.3"
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")

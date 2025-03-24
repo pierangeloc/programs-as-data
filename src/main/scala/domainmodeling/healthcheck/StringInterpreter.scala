@@ -7,26 +7,23 @@ import domainmodeling.healthcheck.kafka.KafkaHealthCheck
 import doobie.*
 import neotype.*
 import sttp.client3.httpclient.zio.{HttpClientZioBackend, SttpClient}
-import zio.*
-import zio.kafka.admin.AdminClient
 
-object ZIOInterpreter {
+object StringInterpreter {
   def interpret(
     errorCondition: ErrorCondition
-  ): URIO[Transactor[Task] & zio.kafka.admin.AdminClient & SttpClient, List[StatusError]] =
+  ): String =
     errorCondition match
       case ErrorCondition.Or(left, right) =>
-        interpret(left).zipPar(interpret(right)).map { case (leftErrors, rightErrors) => leftErrors ++ rightErrors }
+        s"""${interpret(left)}
+          |- or -
+          | ${interpret(right)}""".stripMargin
       case ErrorCondition.DBErrorCondition(DbType.Postgres, checkTables) =>
-        DoobieZIOdBHealthcheck.status(DoobieZIOdBHealthcheck.existsPostgres, checkTables)
-
+        s"Tables ${checkTables.mkString(", ")} do not exist in Postgres"
       case ErrorCondition.DBErrorCondition(DbType.MySql, checkTables) =>
-        DoobieZIOdBHealthcheck.status(DoobieZIOdBHealthcheck.existsMySql, checkTables)
+        s"Tables ${checkTables.mkString(", ")} do not exist in MySQL"
       case ErrorCondition.KafkaErrorCondition(topics) =>
-        KafkaHealthCheck
-          .checkTopics(topics)
-          .map(_.toList)
+        s"Topics ${topics.mkString(", ")} do not exist in Kafka"
       case ErrorCondition.ExternalHttpErrorCondition(url) =>
-        SttpHealthCheck.check(url)
+        s"GET $url does not return a 2xx status code"
 
 }
