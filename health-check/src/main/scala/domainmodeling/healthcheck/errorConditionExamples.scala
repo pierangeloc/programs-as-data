@@ -13,7 +13,7 @@ object Example1 {
   val errorCondition =
     dbErrorCondition(dbType, TableName("customer"), TableName("access_token")) ||
       kafkaErrorCondition(kafkaTopic) ||
-      getHttp2xx(Url("http://localhost:8080/status/400"))
+      getHttp2xx(Url("http://localhost:8080/status/200"))
 
 }
 
