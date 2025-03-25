@@ -41,14 +41,13 @@ object DoobieZIOdBHealthcheck {
     val test = for {
       tx      <- ZIO.service[Transactor[Task]]
       results <- ZIO.foreach(checkTables)(tn => checkTx(tn).transact(tx).map(exists => (tn, exists))).orDie
-      _       <- ZIO.logInfo("Checking tables: " + results.map { case (tn, exists) => s"$tn -> $exists" }.mkString(", "))
       res <- if (results.forall(_._2)) ZIO.succeed(List())
              else
                ZIO.succeed(
                  List(
                    StatusError(
                      Source("Postgres"),
-                     Message(s"Expected tables did not exist [${checkTables.map(_.unwrap).mkString(", ")}] ")
+                     Message(s"Required tables [${results.filter(_._2).map(_._1.unwrap).mkString(", ")}] exist but [${results.filter(!_._2).map[String](_._1.unwrap).mkString(", ")}] do not exist.")
                    )
                  )
                )
