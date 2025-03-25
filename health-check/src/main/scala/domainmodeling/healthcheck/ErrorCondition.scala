@@ -1,6 +1,6 @@
 package domainmodeling.healthcheck
 
-import domainmodeling.healthcheck.ErrorCondition.{DBErrorCondition, ExternalHttpErrorCondition, KafkaErrorCondition, Or}
+import domainmodeling.healthcheck.ErrorCondition.{DBErrorCondition, HttpErrorCondition, KafkaErrorCondition, Or}
 import domainmodeling.healthcheck.InfraModel.Db.{DbType, TableName}
 import domainmodeling.healthcheck.InfraModel.Kafka.Topic
 import domainmodeling.healthcheck.InfraModel.HttpConnection.Url
@@ -24,5 +24,5 @@ object ErrorCondition {
 
   case class DBErrorCondition(dbType: DbType, checkTables: List[TableName]) extends ErrorCondition
   case class KafkaErrorCondition(topics: List[Topic])                              extends ErrorCondition
-  case class ExternalHttpErrorCondition(url: Url)                           extends ErrorCondition
+  case class HttpErrorCondition(url: Url)                           extends ErrorCondition
 }

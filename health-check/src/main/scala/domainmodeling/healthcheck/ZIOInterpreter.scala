@@ -26,7 +26,27 @@ object ZIOInterpreter {
         KafkaHealthCheck
           .checkTopics(topics)
           .map(_.toList)
-      case ErrorCondition.ExternalHttpErrorCondition(url) =>
+      case ErrorCondition.HttpErrorCondition(url) =>
         SttpHealthCheck.check(url)
 
+}
+
+/*
+ * Experimental:
+
+ * The problem with the interpreter above is that it takes all the possible dependencies, even if the actual error condition does not need all of them.
+ * E.g. if the error condition is just about a DBErrorCondition, it does not need the kafka AdminClient and SttpClient dependencies.
+ * We want to use some type sorcery to determine the right output type
+ */
+
+object SmartInterpreter {
+
+  trait WithRequirement[-R, A]
+  case class DBErrorConditionWithRequirement(tx: Transactor[Task], original: ErrorCondition.DBErrorCondition)
+      extends WithRequirement[Transactor[Task], ErrorCondition.DBErrorCondition]
+  case class KafkaErrorConditionWithRequirement(adminClient: AdminClient, original: ErrorCondition.KafkaErrorCondition)
+      extends WithRequirement[AdminClient, ErrorCondition.KafkaErrorCondition]
+
+  case class HttpErrorConditionWithRequirement(adminClient: AdminClient, original: ErrorCondition.KafkaErrorCondition)
+    extends WithRequirement[AdminClient, ErrorCondition.KafkaErrorCondition]
 }

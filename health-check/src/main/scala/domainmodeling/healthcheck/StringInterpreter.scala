@@ -23,7 +23,7 @@ object StringInterpreter {
         s"Tables ${checkTables.mkString(", ")} do not exist in MySQL"
       case ErrorCondition.KafkaErrorCondition(topics) =>
         s"Topics ${topics.mkString(", ")} do not exist in Kafka"
-      case ErrorCondition.ExternalHttpErrorCondition(url) =>
+      case ErrorCondition.HttpErrorCondition(url) =>
         s"GET $url does not return a 2xx status code"
 
 }
