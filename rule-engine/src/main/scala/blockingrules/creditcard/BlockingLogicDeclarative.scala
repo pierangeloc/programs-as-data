@@ -1,5 +1,6 @@
 package blockingrules.creditcard
 
+import blockingrules.creditcard.BlockingLogicDeclarative.Tree
 import blockingrules.creditcard.model.{CreditCard, Purchase}
 import blockingrules.creditcard.model.basetypes.{CardNumber, Country, Probability, PurchaseCategory}
 import neotype.*
@@ -41,7 +42,7 @@ object BlockingLogicDeclarative {
    * rules that our business counterparts might require
    */
 
-  object Live {
+  object LiveRuleEvaluator {
     case class Input(
       creditCard: CreditCard,
       purchase: Purchase
@@ -87,4 +88,87 @@ object BlockingLogicDeclarative {
     }
   }
 
+  case class Tree[+T](node: T, children: List[Tree[T]])
+
+  object Tree {
+
+    def leaf[T](node: T): Tree[T] = Tree(node, List.empty)
+
+    def traverse[T](tree: Tree[T]): List[T] =
+      if (tree.children.isEmpty) List(tree.node)
+      else tree.node :: tree.children.flatMap(traverse)
+
+    /*
+      I want a function that given a tree and a function collapseNodes(main: T, child: T): T gives me another tree where the children of the child tree
+      become children of the main, after being collapsed as well
+     */
+    def collapse[T](tree: Tree[T], collapseNodes: (T, T) => Boolean): Tree[T] = {
+      val childrenWithCollapsable = tree.children.map(child => (child, collapseNodes(tree.node, child.node)))
+      val newChildren: List[Tree[T]] = childrenWithCollapsable.flatMap {
+        case (child, true)  => collapse(child, collapseNodes).children
+        case (child, false) => List(child)
+      }
+      Tree(tree.node, newChildren)
+    }
+
+  }
+
+  
+
+  object MermaidInterpreter {
+
+    def makeTree(rule: BlockingRule): Tree[BlockingRule] = rule match {
+      case BlockingRule.And(l, r) => Tree(rule, List(makeTree(l), makeTree(r)))
+      case BlockingRule.Or(l, r)  => Tree(rule, List(makeTree(l), makeTree(r)))
+      case _                      => Tree(rule, List.empty)
+
+    }
+
+    def isNode(b: BlockingRule) = b match {
+      case BlockingRule.Or(_, _)  => true
+      case BlockingRule.And(_, _) => true
+      case _                      => false
+    }
+
+    case class Labelled[A <: BlockingRule](a: A, label: Int)
+
+    def toMermaidCode(rule: BlockingRule): String = ""
+
+  }
+
+}
+
+object TreeExample {
+  sealed trait Operation
+
+  object Operation {
+    case object Addition          extends Operation
+    case object Multiplication    extends Operation
+    case class Number(value: Int) extends Operation
+  }
+
+  import Operation.*
+  val arithmetics: Tree[Operation] = Tree(
+    Addition,
+    List(
+      Tree.leaf(Number(4)),
+      Tree(
+        Addition,
+        List(Tree.leaf(Number(2)), Tree(Multiplication, List(Tree.leaf(Number(3)), Tree.leaf(Number(5)))))
+      )
+    )
+  )
+
+
+  @main def main(args: String*): Unit = {
+
+    println(s"original: $arithmetics")
+
+    def collapse(x: Operation, y: Operation) = (x, y) match {
+      case (Operation.Addition, Operation.Addition) => true
+      case (Operation.Multiplication, Operation.Multiplication) => true
+      case _ => false
+    }
+    println(s"Collapsed: ${Tree.collapse(arithmetics, collapse)}")
+  }
 }
