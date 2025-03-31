@@ -40,7 +40,7 @@ object BlockingLogicDeclarative {
    * that our business counterparts might require
    */
 
-  object LiveInterpreter {
+  object Live {
 
 
     case class Input(
@@ -61,14 +61,26 @@ object BlockingLogicDeclarative {
     def purchaseAmountExceeds(rule: BlockingRule.PurchaseAmountExceeds)(input: Input): UIO[Boolean] =
         ZIO.succeed(input.purchase.amount.unwrap > rule.amount)
 
-    def creditCardFlagged(rule: BlockingRule.CreditCardFlagged)(input: Input):  URIO[CreditCardFlaggedService, Boolean]=
-      ZIO.serviceWithZIO[CreditCardFlaggedService](_.isFlagged(input.creditCard.cardNumber))
+    def creditCardFlagged(ccFlaggedService: CreditCardFlaggedService)(input: Input):  UIO[Boolean] =
+      ccFlaggedService.isFlagged(input.creditCard.cardNumber)
 
-    def fraudProbability(rule: BlockingRule.FraudProbabilityExceeds)(input: Input): ZIO[FraudScoreService, Nothing, Any] =
-      ZIO.serviceWithZIO[FraudScoreService](_.getFraudScore(input.creditCard, input.purchase)).map(score => score.unwrap > rule.threshold.unwrap)
+    def fraudProbability(rule: BlockingRule.FraudProbabilityExceeds, fraudScoreService: FraudScoreService)(input: Input): UIO[Boolean] =
+      fraudScoreService.getFraudScore(input.creditCard, input.purchase).map(score => score.unwrap > rule.threshold.unwrap)
 
 
+    def evaluate(rule: BlockingRule, ccFlaggedService: CreditCardFlaggedService, fraudScoreService: FraudScoreService)(input: Input): UIO[Boolean] = {
+        def eval(rule: BlockingRule): UIO[Boolean] = rule match {
+            case BlockingRule.PurchaseOccursInCountry(country) => purchaseOccursInCountry(BlockingRule.PurchaseOccursInCountry(country))(input)
+            case BlockingRule.PurchaseCategoryEquals(purchaseCategory) => purchaseCategoryEquals(BlockingRule.PurchaseCategoryEquals(purchaseCategory))(input)
+            case BlockingRule.PurchaseAmountExceeds(amount) => purchaseAmountExceeds(BlockingRule.PurchaseAmountExceeds(amount))(input)
+            case BlockingRule.CreditCardFlagged() => creditCardFlagged(ccFlaggedService)(input)
+            case BlockingRule.FraudProbabilityExceeds(threshold) => fraudProbability(BlockingRule.FraudProbabilityExceeds(threshold), fraudScoreService)(input)
+            case BlockingRule.And(l, r) => eval(l).zipWith(eval(r))(_ && _)
+            case BlockingRule.Or(l, r) => eval(l).zipWith(eval(r))(_ || _)
+        }
 
+        eval(rule)
+    }
   }
 
 }
