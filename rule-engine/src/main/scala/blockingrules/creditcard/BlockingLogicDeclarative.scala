@@ -1,6 +1,6 @@
 package blockingrules.creditcard
 
-import blockingrules.creditcard.BlockingLogicDeclarative.Tree
+import blockingrules.creditcard.BlockingLogicDeclarative.{DSLExamples, MermaidInterpreter, Tree}
 import blockingrules.creditcard.model.{CreditCard, Purchase}
 import blockingrules.creditcard.model.basetypes.{CardNumber, Country, Probability, PurchaseCategory}
 import cats.Show
@@ -218,8 +218,6 @@ object BlockingLogicDeclarative {
     }
 
     import MermaidRenderable.given
-    summon[MermaidRenderable[BlockingRule]]
-    summon[MermaidRenderable[Labelled[BlockingRule]]].mermaidRender
     def toMermaidCode[A: MermaidRenderable](tree: Tree[Labelled[A]]): UIO[String] =
       for {
         subtrees <- ZIO.succeed(Tree.traverseSubtrees(tree))
@@ -227,10 +225,34 @@ object BlockingLogicDeclarative {
                  subtree.node.mermaidRender.text ::
                    subtree.children.map(child => s"${subtree.node.label} --> ${child.node.label}")
                }.mkString("\n")
-      } yield code
+      } yield
+        s"""flowchart LR
+           |${code}""".stripMargin
 
   }
 
+  import DSL.*
+  object DSLExamples {
+    val example1 = (purchaseInCountry(Country.UK) && purchaseCategoryEquals(PurchaseCategory.Crypto)) ||
+      (purchaseInCountry(Country.China) && purchaseCategoryEquals(PurchaseCategory.Electronics)) ||
+      (purchaseInCountry(Country.Italy) && purchaseCategoryEquals(PurchaseCategory.Weapons) && purchaseAmountExceeds(
+        1000
+      )) ||
+      ((purchaseInCountry(Country.Netherlands) && purchaseAmountExceeds(500)) || (purchaseInCountry(
+        Country.US
+      ) && purchaseAmountExceeds(1000))) && fraudProbabilityExceeds(Probability(0.8))
+  }
+}
+
+
+object MermaidExample extends ZIOAppDefault {
+  override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =
+    for {
+      labelledTree <- MermaidInterpreter.label(DSLExamples.example1)
+      mermaidCode <-  blockingrules.creditcard.BlockingLogicDeclarative.MermaidInterpreter.toMermaidCode(labelledTree)  
+      _ <- zio.Console.printLine("mermaid code: \n\n" + mermaidCode)
+    } yield ()
+    
 }
 
 object TreeExample extends ZIOAppDefault {

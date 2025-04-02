@@ -44,6 +44,7 @@ object BlockingLogicStraight {
       ZIO.succeed(true)
     else if (purchase.inCountry == Country.UK && purchase.category == PurchaseCategory.Weapons && purchase.amount.unwrap > 1000)
       ZIO.succeed(false)
+      //one downside of this approach is also that this involvement of the service interferes with the logic definition
     else if ((purchase.inCountry == Country.Netherlands && purchase.amount.unwrap > 500) || (purchase.inCountry == Country.US && purchase.amount.unwrap > 1000))
      for {
       fss <- ZIO.service[FraudScoreService]
