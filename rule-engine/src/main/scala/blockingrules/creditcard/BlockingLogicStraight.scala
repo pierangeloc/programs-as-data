@@ -32,7 +32,8 @@ object BlockingLogicStraight {
    *  1. The logic can do pretty much anything with the given inputs. It can compute ad hoc functions, we have basically no constraints in what we can do here
    *  2. It requires wiring up the FraudScoreService in the environment in order to test it
    *  3. It is strict about the way the fraud score can come from. It must only come from an external service, it can't come from somewhere else, such as configuration or a database
-   *  4. The plus of an _interpretation_ is that it can be synthesized even by an AI model (not LLM) and deployed, A/B tested etc
+   *  4. One downside of this approach is also that this involvement of the service interferes with the logic definition
+   *  5. The plus of an _interpretation_ is that it can be synthesized even by an AI model (not LLM) and deployed, A/B tested etc
    */
   def isBlocked(creditCard: CreditCard, purchase: Purchase): URIO[FraudScoreService, Boolean] =
     if (creditCard.forbiddenCountries.contains(purchase.inCountry))
@@ -44,7 +45,6 @@ object BlockingLogicStraight {
       ZIO.succeed(true)
     else if (purchase.inCountry == Country.UK && purchase.category == PurchaseCategory.Weapons && purchase.amount.unwrap > 1000)
       ZIO.succeed(false)
-      //one downside of this approach is also that this involvement of the service interferes with the logic definition
     else if ((purchase.inCountry == Country.Netherlands && purchase.amount.unwrap > 500) || (purchase.inCountry == Country.US && purchase.amount.unwrap > 1000))
      for {
       fss <- ZIO.service[FraudScoreService]

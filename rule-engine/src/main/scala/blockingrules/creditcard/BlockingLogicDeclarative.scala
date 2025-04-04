@@ -1,11 +1,17 @@
 package blockingrules.creditcard
 
+import blockingrules.creditcard.BlockingLogicDeclarative.MermaidInterpreter.MermaidRenderable.Style
 import blockingrules.creditcard.BlockingLogicDeclarative.{DSLExamples, MermaidInterpreter, Tree}
 import blockingrules.creditcard.model.{CreditCard, Purchase}
 import blockingrules.creditcard.model.basetypes.{CardNumber, Country, Probability, PurchaseCategory}
 import cats.Show
 import neotype.*
 import zio.*
+
+import java.io.ByteArrayOutputStream
+import java.nio.charset.StandardCharsets
+import java.util.Base64
+import java.util.zip.GZIPOutputStream
 
 object BlockingLogicDeclarative {
 
@@ -154,25 +160,40 @@ object BlockingLogicDeclarative {
       extension (a: A) def mermaidRender: MermaidRenderable.Render
     }
     object MermaidRenderable {
-      case class Render(text: String, style: String = "")
+      enum Style { self =>
+        case Default
+        case Or
+        case And
+
+
+        def toStyleString: String = self match {
+          case Style.Default => ""
+          case Style.Or   => "fill:#b36,stroke:#666,stroke-width:4px"
+          case Style.And  => "fill:#693,stroke:#666,stroke-width:4px"
+//          case Style.And  => "fill:#63b,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5"
+        }
+      }
+
+      case class Render(text: String, style: Style = Style.Default)
 
       given MermaidRenderable[BlockingRule] with {
         extension (br: BlockingRule)
           def mermaidRender: MermaidRenderable.Render = br match
-            case BlockingRule.And(_, _) => MermaidRenderable.Render(Shape.renderLabel("AND", Shape.Hexagon))
-            case BlockingRule.Or(_, _)  => MermaidRenderable.Render(Shape.renderLabel("OR", Shape.Hexagon))
+            case BlockingRule.And(_, _) =>
+              MermaidRenderable.Render(Shape.renderLabel(""""AND"""", Shape.Hexagon), Style.And)
+            case BlockingRule.Or(_, _) => MermaidRenderable.Render(Shape.renderLabel(""""OR"""", Shape.Hexagon), Style.Or)
             case BlockingRule.PurchaseOccursInCountry(country) =>
-              MermaidRenderable.Render(Shape.renderLabel(s"In Country: ${country.unwrap}", Shape.RoundedSquare))
+              MermaidRenderable.Render(Shape.renderLabel(s""""In Country: ${country.unwrap}"""", Shape.RoundedSquare))
             case BlockingRule.PurchaseCategoryEquals(purchaseCategory) =>
               MermaidRenderable.Render(
-                Shape.renderLabel(s"Category: ${purchaseCategory.toString}", Shape.RoundedSquare)
+                Shape.renderLabel(s""""Category: ${purchaseCategory.toString}"""", Shape.RoundedSquare)
               )
             case BlockingRule.PurchaseAmountExceeds(amount) =>
-              MermaidRenderable.Render(Shape.renderLabel(s"Amount > ${amount}", Shape.RoundedSquare))
+              MermaidRenderable.Render(Shape.renderLabel(s""""Amount > ${amount}"""", Shape.RoundedSquare))
             case BlockingRule.FraudProbabilityExceeds(threshold) =>
-              MermaidRenderable.Render(Shape.renderLabel(s"P[Fraud] > ${threshold.unwrap}", Shape.RoundedSquare))
+              MermaidRenderable.Render(Shape.renderLabel(s""""P[Fraud] > ${threshold.unwrap}"""", Shape.RoundedSquare))
             case BlockingRule.CreditCardFlagged() =>
-              MermaidRenderable.Render(Shape.renderLabel(s"CC Flagged", Shape.RoundedSquare))
+              MermaidRenderable.Render(Shape.renderLabel(s""""CC Flagged"""", Shape.RoundedSquare))
       }
 
       given [A](using ra: MermaidRenderable[A]): MermaidRenderable[Labelled[A]] with {
@@ -223,11 +244,69 @@ object BlockingLogicDeclarative {
         subtrees <- ZIO.succeed(Tree.traverseSubtrees(tree))
         code = subtrees.flatMap { subtree =>
                  subtree.node.mermaidRender.text ::
+                   (if (subtree.node.mermaidRender.style != Style.Default)
+                      s"style ${subtree.node.label} ${subtree.node.mermaidRender.style.toStyleString}"
+                    else "") ::
                    subtree.children.map(child => s"${subtree.node.label} --> ${child.node.label}")
                }.mkString("\n")
-      } yield
-        s"""flowchart LR
-           |${code}""".stripMargin
+      } yield s"""flowchart LR
+                 |${code}""".stripMargin
+
+    def mermaidLink(mermaidCode: String): UIO[String] = {
+      val escapedCode = mermaidCode.replace("\"", "\\\"").replace("\n", "\\n")
+      val mermaidGraph = s"""{"code": "$escapedCode"}", "mermaid": {"theme": "default"} }"""
+      val inflatedBytes = mermaidGraph.getBytes(StandardCharsets.UTF_8)
+      println(s"inflated bytes: ${inflatedBytes.length}")
+      ZIO.scoped {
+        ZIO.acquireRelease(
+          for {
+            byteOutputStream <- ZIO.succeed(new ByteArrayOutputStream())
+            zipOutputStream <- ZIO.succeed(new GZIPOutputStream(byteOutputStream))
+          } yield (byteOutputStream, zipOutputStream))((byteOutputStream, zipOutputStream) => ZIO.attempt {
+          println("Closing streams")
+//          byteOutputStream.close()
+          zipOutputStream.close()
+          println("closed streams")
+        }.orDie
+        ).flatMap { case (byteOS, zipOS) =>
+          for {
+            _ <- ZIO.logInfo(s"Original MermaidGraph: $mermaidGraph")
+            _ <- ZIO.succeed(zipOS.write(inflatedBytes))
+            _ <- ZIO.logInfo("Written bytes into zipstream")
+            deflated <- ZIO.succeed(byteOS.toByteArray)
+            _ <- ZIO.logInfo(s"Extracted bytes from underlying bytestream: ${deflated.length}")
+            encoded = new String(Base64.getEncoder.encode(deflated), StandardCharsets.UTF_8)
+            _ <- ZIO.logInfo(s"Encoded bytes B64: $encoded")
+            mermaidLink = s"https://mermaid.live/edit#peko:$encoded"
+          } yield mermaidLink
+
+        }
+      }
+
+    }
+
+    def mermaidLink2(mermaidCode: String): String = {
+      val escapedCode = mermaidCode.replace("\"", "\\\"").replace("\n", "\\n")
+      val mermaidGraph = s"""{"code": "$escapedCode", "mermaid": {"theme": "default"} }"""
+      println(s"mermaidGraph:\n$mermaidGraph\n")
+      val inflatedBytes = mermaidGraph.getBytes(StandardCharsets.UTF_8)
+      println(s"inflated bytes: ${inflatedBytes.length}")
+      val  byteOutputStream  = new ByteArrayOutputStream()
+      val zipOutputStream = new GZIPOutputStream(byteOutputStream)
+      zipOutputStream.write(inflatedBytes)
+      zipOutputStream.close()
+      val deflated  = byteOutputStream.toByteArray
+      println(s"Extracted bytes from underlying bytestream: ${deflated.length}")
+      val encoded = new String(Base64.getEncoder.encode(deflated), StandardCharsets.UTF_8)
+      println (s"Encoded bytes B64: $encoded")
+      val mermaidLink = s"https://mermaid.live/edit#pako:$encoded"
+      mermaidLink
+
+
+    }
+
+
+
 
   }
 
@@ -244,15 +323,17 @@ object BlockingLogicDeclarative {
   }
 }
 
-
 object MermaidExample extends ZIOAppDefault {
   override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =
     for {
       labelledTree <- MermaidInterpreter.label(DSLExamples.example1)
-      mermaidCode <-  blockingrules.creditcard.BlockingLogicDeclarative.MermaidInterpreter.toMermaidCode(labelledTree)  
-      _ <- zio.Console.printLine("mermaid code: \n\n" + mermaidCode)
+      mermaidCode  <- blockingrules.creditcard.BlockingLogicDeclarative.MermaidInterpreter.toMermaidCode(labelledTree)
+      _            <- zio.Console.printLine("mermaid code: \n\n" + mermaidCode)
+//      mermaidLink  <- blockingrules.creditcard.BlockingLogicDeclarative.MermaidInterpreter.mermaidLink(mermaidCode)
+      mermaidLink  = blockingrules.creditcard.BlockingLogicDeclarative.MermaidInterpreter.mermaidLink2(mermaidCode)
+      _            <- zio.Console.printLine("mermaid link: \n\n" + mermaidLink)
     } yield ()
-    
+
 }
 
 object TreeExample extends ZIOAppDefault {
