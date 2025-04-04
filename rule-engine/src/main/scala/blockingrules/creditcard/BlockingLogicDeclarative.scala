@@ -1,10 +1,12 @@
 package blockingrules.creditcard
 
+import blockingrules.creditcard.BlockingLogicDeclarative.MermaidInterpreter.{MermaidRenderable, Shape}
 import blockingrules.creditcard.BlockingLogicDeclarative.MermaidInterpreter.MermaidRenderable.Style
-import blockingrules.creditcard.BlockingLogicDeclarative.{DSLExamples, MermaidInterpreter, Tree}
+import blockingrules.creditcard.BlockingLogicDeclarative.{DSLExamples, MermaidInterpreter}
 import blockingrules.creditcard.model.{CreditCard, Purchase}
 import blockingrules.creditcard.model.basetypes.{CardNumber, Country, Probability, PurchaseCategory}
 import cats.Show
+import datastructures.Tree
 import neotype.*
 import zio.*
 
@@ -43,31 +45,31 @@ object BlockingLogicDeclarative {
     def creditCardFlagged: BlockingRule                               = BlockingRule.CreditCardFlagged()
   }
 
+
   /**
-   * With a bit of extra boilerplate, we defined a rigourous set of constructors
+   * With a bit of extra boilerplate, we defined a rigorous set of constructors
    * and combinators that we can use to express all the possible complicated
    * rules that our business counterparts might require
    */
-
   object LiveRuleEvaluator {
     case class Input(
       creditCard: CreditCard,
       purchase: Purchase
     )
 
-    def purchaseOccursInCountry(rule: BlockingRule.PurchaseOccursInCountry)(input: Input): UIO[Boolean] =
+    private def purchaseOccursInCountry(rule: BlockingRule.PurchaseOccursInCountry)(input: Input): UIO[Boolean] =
       ZIO.succeed(input.purchase.inCountry == rule.country)
 
-    def purchaseCategoryEquals(rule: BlockingRule.PurchaseCategoryEquals)(input: Input): UIO[Boolean] =
+    private def purchaseCategoryEquals(rule: BlockingRule.PurchaseCategoryEquals)(input: Input): UIO[Boolean] =
       ZIO.succeed(input.purchase.category == rule.purchaseCategory)
 
-    def purchaseAmountExceeds(rule: BlockingRule.PurchaseAmountExceeds)(input: Input): UIO[Boolean] =
+    private def purchaseAmountExceeds(rule: BlockingRule.PurchaseAmountExceeds)(input: Input): UIO[Boolean] =
       ZIO.succeed(input.purchase.amount.unwrap > rule.amount)
 
-    def creditCardFlagged(ccFlaggedService: CreditCardFlaggedService)(input: Input): UIO[Boolean] =
+    private def creditCardFlagged(ccFlaggedService: CreditCardFlaggedService)(input: Input): UIO[Boolean] =
       ccFlaggedService.isFlagged(input.creditCard.cardNumber)
 
-    def fraudProbability(rule: BlockingRule.FraudProbabilityExceeds, fraudScoreService: FraudScoreService)(
+    private def fraudProbability(rule: BlockingRule.FraudProbabilityExceeds, fraudScoreService: FraudScoreService)(
       input: Input
     ): UIO[Boolean] =
       fraudScoreService
@@ -93,43 +95,6 @@ object BlockingLogicDeclarative {
 
       eval(rule)
     }
-  }
-
-  case class Tree[+T](node: T, children: List[Tree[T]]) { self =>
-
-    def isLeaf: Boolean            = children.isEmpty
-    def map[S](f: T => S): Tree[S] = Tree[S](f(self.node), self.children.map(_.map(f)))
-
-    def mapZIO[S](f: T => UIO[S]): UIO[Tree[S]] = self match {
-      case Tree(n, cs) =>
-        for {
-          fn <- f(n)
-          fs <- ZIO.foreach(cs)(c => c.mapZIO(f))
-        } yield Tree(fn, fs)
-    }
-  }
-
-  object Tree {
-
-    def leaf[T](node: T): Tree[T] = Tree(node, List.empty)
-
-    def traverseSubtrees[T](tree: Tree[T]): List[Tree[T]] =
-      if (tree.children.isEmpty) List(tree)
-      else tree :: tree.children.flatMap(traverseSubtrees)
-
-    /*
-      I want a function that given a tree and a function collapseNodes(main: T, child: T): T gives me another tree where the children of the child tree
-      become children of the main, after being collapsed as well
-     */
-    def collapse[T](tree: Tree[T], collapseNodes: (T, T) => Boolean): Tree[T] = {
-      val childrenWithCollapsable = tree.children.map(child => (child, collapseNodes(tree.node, child.node)))
-      val newChildren: List[Tree[T]] = childrenWithCollapsable.flatMap {
-        case (child, true)  => collapse(child, collapseNodes).children
-        case (child, false) => List(collapse(child, collapseNodes))
-      }
-      Tree(tree.node, newChildren)
-    }
-
   }
 
   object MermaidInterpreter {
@@ -165,36 +130,17 @@ object BlockingLogicDeclarative {
         case Or
         case And
 
-
         def toStyleString: String = self match {
           case Style.Default => ""
-          case Style.Or   => "fill:#b36,stroke:#666,stroke-width:4px"
-          case Style.And  => "fill:#693,stroke:#666,stroke-width:4px"
+          case Style.Or      => "fill:#b36,stroke:#666,stroke-width:4px"
+          case Style.And     => "fill:#693,stroke:#666,stroke-width:4px"
 //          case Style.And  => "fill:#63b,stroke:#f66,stroke-width:2px,color:#fff,stroke-dasharray: 5 5"
         }
       }
 
       case class Render(text: String, style: Style = Style.Default)
 
-      given MermaidRenderable[BlockingRule] with {
-        extension (br: BlockingRule)
-          def mermaidRender: MermaidRenderable.Render = br match
-            case BlockingRule.And(_, _) =>
-              MermaidRenderable.Render(Shape.renderLabel(""""AND"""", Shape.Hexagon), Style.And)
-            case BlockingRule.Or(_, _) => MermaidRenderable.Render(Shape.renderLabel(""""OR"""", Shape.Hexagon), Style.Or)
-            case BlockingRule.PurchaseOccursInCountry(country) =>
-              MermaidRenderable.Render(Shape.renderLabel(s""""In Country: ${country.unwrap}"""", Shape.RoundedSquare))
-            case BlockingRule.PurchaseCategoryEquals(purchaseCategory) =>
-              MermaidRenderable.Render(
-                Shape.renderLabel(s""""Category: ${purchaseCategory.toString}"""", Shape.RoundedSquare)
-              )
-            case BlockingRule.PurchaseAmountExceeds(amount) =>
-              MermaidRenderable.Render(Shape.renderLabel(s""""Amount > ${amount}"""", Shape.RoundedSquare))
-            case BlockingRule.FraudProbabilityExceeds(threshold) =>
-              MermaidRenderable.Render(Shape.renderLabel(s""""P[Fraud] > ${threshold.unwrap}"""", Shape.RoundedSquare))
-            case BlockingRule.CreditCardFlagged() =>
-              MermaidRenderable.Render(Shape.renderLabel(s""""CC Flagged"""", Shape.RoundedSquare))
-      }
+
 
       given [A](using ra: MermaidRenderable[A]): MermaidRenderable[Labelled[A]] with {
         extension (la: Labelled[A])
@@ -216,12 +162,6 @@ object BlockingLogicDeclarative {
 
     }
 
-    def isNode(b: BlockingRule) = b match {
-      case BlockingRule.Or(_, _)  => true
-      case BlockingRule.And(_, _) => true
-      case _                      => false
-    }
-
     case class Labelled[A](a: A, label: Int)
 
     def label(blockingRule: BlockingRule): UIO[Tree[Labelled[BlockingRule]]] = {
@@ -238,8 +178,10 @@ object BlockingLogicDeclarative {
       } yield labelledTree
     }
 
-    import MermaidRenderable.given
-    def toMermaidCode[A: MermaidRenderable](tree: Tree[Labelled[A]]): UIO[String] =
+
+    def toMermaidCode[A: MermaidRenderable](tree: Tree[Labelled[A]]): UIO[String] = {
+      import MermaidRenderable.given
+
       for {
         subtrees <- ZIO.succeed(Tree.traverseSubtrees(tree))
         code = subtrees.flatMap { subtree =>
@@ -251,67 +193,67 @@ object BlockingLogicDeclarative {
                }.mkString("\n")
       } yield s"""flowchart LR
                  |${code}""".stripMargin
+    }
 
+    // this for some reason don't work, probably streams get closed prematurely
     def mermaidLink(mermaidCode: String): UIO[String] = {
-      val escapedCode = mermaidCode.replace("\"", "\\\"").replace("\n", "\\n")
-      val mermaidGraph = s"""{"code": "$escapedCode"}", "mermaid": {"theme": "default"} }"""
+      val escapedCode   = mermaidCode.replace("\"", "\\\"").replace("\n", "\\n")
+      val mermaidGraph  = s"""{"code": "$escapedCode"}", "mermaid": {"theme": "default"} }"""
       val inflatedBytes = mermaidGraph.getBytes(StandardCharsets.UTF_8)
       println(s"inflated bytes: ${inflatedBytes.length}")
       ZIO.scoped {
-        ZIO.acquireRelease(
-          for {
+        ZIO
+          .acquireRelease(for {
             byteOutputStream <- ZIO.succeed(new ByteArrayOutputStream())
-            zipOutputStream <- ZIO.succeed(new GZIPOutputStream(byteOutputStream))
-          } yield (byteOutputStream, zipOutputStream))((byteOutputStream, zipOutputStream) => ZIO.attempt {
-          println("Closing streams")
+            zipOutputStream  <- ZIO.succeed(new GZIPOutputStream(byteOutputStream))
+          } yield (byteOutputStream, zipOutputStream))((byteOutputStream, zipOutputStream) =>
+            ZIO.attempt {
+              println("Closing streams")
 //          byteOutputStream.close()
-          zipOutputStream.close()
-          println("closed streams")
-        }.orDie
-        ).flatMap { case (byteOS, zipOS) =>
-          for {
-            _ <- ZIO.logInfo(s"Original MermaidGraph: $mermaidGraph")
-            _ <- ZIO.succeed(zipOS.write(inflatedBytes))
-            _ <- ZIO.logInfo("Written bytes into zipstream")
-            deflated <- ZIO.succeed(byteOS.toByteArray)
-            _ <- ZIO.logInfo(s"Extracted bytes from underlying bytestream: ${deflated.length}")
-            encoded = new String(Base64.getEncoder.encode(deflated), StandardCharsets.UTF_8)
-            _ <- ZIO.logInfo(s"Encoded bytes B64: $encoded")
-            mermaidLink = s"https://mermaid.live/edit#peko:$encoded"
-          } yield mermaidLink
+              zipOutputStream.close()
+              println("closed streams")
+            }.orDie
+          )
+          .flatMap { case (byteOS, zipOS) =>
+            for {
+              _          <- ZIO.logInfo(s"Original MermaidGraph: $mermaidGraph")
+              _          <- ZIO.succeed(zipOS.write(inflatedBytes))
+              _          <- ZIO.logInfo("Written bytes into zipstream")
+              deflated   <- ZIO.succeed(byteOS.toByteArray)
+              _          <- ZIO.logInfo(s"Extracted bytes from underlying bytestream: ${deflated.length}")
+              encoded     = new String(Base64.getEncoder.encode(deflated), StandardCharsets.UTF_8)
+              _          <- ZIO.logInfo(s"Encoded bytes B64: $encoded")
+              mermaidLink = s"https://mermaid.live/edit#peko:$encoded"
+            } yield mermaidLink
 
-        }
+          }
       }
 
     }
 
     def mermaidLink2(mermaidCode: String): String = {
-      val escapedCode = mermaidCode.replace("\"", "\\\"").replace("\n", "\\n")
+      val escapedCode  = mermaidCode.replace("\"", "\\\"").replace("\n", "\\n")
       val mermaidGraph = s"""{"code": "$escapedCode", "mermaid": {"theme": "default"} }"""
       println(s"mermaidGraph:\n$mermaidGraph\n")
       val inflatedBytes = mermaidGraph.getBytes(StandardCharsets.UTF_8)
       println(s"inflated bytes: ${inflatedBytes.length}")
-      val  byteOutputStream  = new ByteArrayOutputStream()
-      val zipOutputStream = new GZIPOutputStream(byteOutputStream)
+      val byteOutputStream = new ByteArrayOutputStream()
+      val zipOutputStream  = new GZIPOutputStream(byteOutputStream)
       zipOutputStream.write(inflatedBytes)
       zipOutputStream.close()
-      val deflated  = byteOutputStream.toByteArray
+      val deflated = byteOutputStream.toByteArray
       println(s"Extracted bytes from underlying bytestream: ${deflated.length}")
       val encoded = new String(Base64.getEncoder.encode(deflated), StandardCharsets.UTF_8)
-      println (s"Encoded bytes B64: $encoded")
+      println(s"Encoded bytes B64: $encoded")
       val mermaidLink = s"https://mermaid.live/edit#pako:$encoded"
       mermaidLink
 
-
     }
-
-
-
 
   }
 
-  import DSL.*
   object DSLExamples {
+    import DSL.*
     val example1 = (purchaseInCountry(Country.UK) && purchaseCategoryEquals(PurchaseCategory.Crypto)) ||
       (purchaseInCountry(Country.China) && purchaseCategoryEquals(PurchaseCategory.Electronics)) ||
       (purchaseInCountry(Country.Italy) && purchaseCategoryEquals(PurchaseCategory.Weapons) && purchaseAmountExceeds(
@@ -321,69 +263,41 @@ object BlockingLogicDeclarative {
         Country.US
       ) && purchaseAmountExceeds(1000))) && fraudProbabilityExceeds(Probability(0.8))
   }
+
+
+  object Instances:
+    given MermaidRenderable[BlockingRule] with {
+      extension (br: BlockingRule)
+        def mermaidRender: MermaidRenderable.Render = br match
+          case BlockingRule.And(_, _) =>
+            MermaidRenderable.Render(Shape.renderLabel(""""AND"""", Shape.Hexagon), Style.And)
+          case BlockingRule.Or(_, _) =>
+            MermaidRenderable.Render(Shape.renderLabel(""""OR"""", Shape.Hexagon), Style.Or)
+          case BlockingRule.PurchaseOccursInCountry(country) =>
+            MermaidRenderable.Render(Shape.renderLabel(s""""In Country: ${country.unwrap}"""", Shape.RoundedSquare))
+          case BlockingRule.PurchaseCategoryEquals(purchaseCategory) =>
+            MermaidRenderable.Render(
+              Shape.renderLabel(s""""Category: ${purchaseCategory.toString}"""", Shape.RoundedSquare)
+            )
+          case BlockingRule.PurchaseAmountExceeds(amount) =>
+            MermaidRenderable.Render(Shape.renderLabel(s""""Amount > ${amount}"""", Shape.RoundedSquare))
+          case BlockingRule.FraudProbabilityExceeds(threshold) =>
+            MermaidRenderable.Render(Shape.renderLabel(s""""P[Fraud] > ${threshold.unwrap}"""", Shape.RoundedSquare))
+          case BlockingRule.CreditCardFlagged() =>
+            MermaidRenderable.Render(Shape.renderLabel(s""""CC Flagged"""", Shape.RoundedSquare))
+    }
 }
 
 object MermaidExample extends ZIOAppDefault {
+
+  import BlockingLogicDeclarative.Instances.given
   override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =
     for {
       labelledTree <- MermaidInterpreter.label(DSLExamples.example1)
       mermaidCode  <- blockingrules.creditcard.BlockingLogicDeclarative.MermaidInterpreter.toMermaidCode(labelledTree)
       _            <- zio.Console.printLine("mermaid code: \n\n" + mermaidCode)
-//      mermaidLink  <- blockingrules.creditcard.BlockingLogicDeclarative.MermaidInterpreter.mermaidLink(mermaidCode)
-      mermaidLink  = blockingrules.creditcard.BlockingLogicDeclarative.MermaidInterpreter.mermaidLink2(mermaidCode)
+      mermaidLink   = blockingrules.creditcard.BlockingLogicDeclarative.MermaidInterpreter.mermaidLink2(mermaidCode)
       _            <- zio.Console.printLine("mermaid link: \n\n" + mermaidLink)
     } yield ()
-
-}
-
-object TreeExample extends ZIOAppDefault {
-  sealed trait Operation
-
-  object Operation {
-    case object Addition          extends Operation
-    case object Multiplication    extends Operation
-    case class Number(value: Int) extends Operation
-  }
-
-  import Operation.*
-  val arithmetics: Tree[Operation] = Tree(
-    Addition,
-    List(
-      Tree.leaf(Number(4)),
-      Tree(
-        Addition,
-        List(
-          Tree.leaf(Number(2)),
-          Tree(
-            Multiplication,
-            List(
-              Tree.leaf(Number(3)),
-              Tree(
-                Addition,
-                List(Tree.leaf(Number(4)), Tree(Addition, List(Tree.leaf(Number(6)), Tree.leaf(Number(8)))))
-              )
-            )
-          )
-        )
-      )
-    )
-  )
-
-  def collapse(x: Operation, y: Operation) = (x, y) match {
-    case (Operation.Addition, Operation.Addition)             => true
-    case (Operation.Multiplication, Operation.Multiplication) => true
-    case _                                                    => false
-  }
-
-  override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =
-    zio.Console.printLine(s"original: $arithmetics") *>
-      zio.Console.printLine(s"Collapsed: ${Tree.collapse(arithmetics, collapse)}") *> {
-
-        for {
-          counter      <- zio.Ref.make(0)
-          labelledTree <- arithmetics.mapZIO(o => counter.getAndUpdate(_ + 1).map(nr => (o, nr)))
-          _            <- zio.Console.printLine(s"original with labels: $labelledTree")
-        } yield ()
-      }
 
 }

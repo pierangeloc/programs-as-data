@@ -50,7 +50,31 @@ lazy val ruleEngine = project
       "com.softwaremill.sttp.client3" %% "async-http-client-backend-zio" % "3.10.3"
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  ).dependsOn(dataStructures)
+
+lazy val dataStructures = project
+  .in(file("data-structures"))
+  .settings(
+    name := "data-structures",
+    libraryDependencies ++= Seq(
+      "dev.zio"                       %% "zio"                           % "2.1.1",
+      "io.github.kitlangton"          %% "neotype"                       % "0.3.15",
+      "io.github.kitlangton"          %% "neotype-doobie"                % "0.3.15",
+      "org.tpolecat"                  %% "doobie-core"                   % doobieV,
+      "org.tpolecat"                  %% "doobie-hikari"                 % doobieV,
+      "org.tpolecat"                  %% "doobie-postgres"               % doobieV,
+      "org.tpolecat"                  %% "doobie-mysql"                  % doobieV,
+      "dev.zio"                       %% "zio-interop-cats"              % "23.1.0.4",
+      "mysql"                          % "mysql-connector-java"          % "8.0.33",
+      "dev.zio"                       %% "zio-test"                      % "2.1.1" % Test,
+      "dev.zio"                       %% "zio-kafka"                     % "2.11.0",
+      "dev.zio"                       %% "zio-logging-slf4j"             % "2.5.0",
+      "ch.qos.logback"                 % "logback-classic"               % "1.5.6",
+      "com.softwaremill.sttp.client3" %% "async-http-client-backend-zio" % "3.10.3"
+    ),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
+
 
 
 lazy val root = (project in file("."))
