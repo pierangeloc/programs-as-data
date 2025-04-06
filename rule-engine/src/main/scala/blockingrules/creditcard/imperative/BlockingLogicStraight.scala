@@ -1,5 +1,6 @@
-package blockingrules.creditcard
+package blockingrules.creditcard.imperative
 
+import blockingrules.creditcard.FraudScoreService
 import blockingrules.creditcard.model.basetypes.{Country, PurchaseCategory}
 import blockingrules.creditcard.model.{CreditCard, Purchase}
 import neotype.*
@@ -20,7 +21,7 @@ object BlockingLogicStraight {
 
   def isRiskyCategory(purchaseCategory: PurchaseCategory): Boolean =
     purchaseCategory match {
-      case PurchaseCategory.Weapons => true
+      case PurchaseCategory.Gambling => true
       case PurchaseCategory.Crypto  => true
       case _                        => false
     }
@@ -43,7 +44,7 @@ object BlockingLogicStraight {
     else // forbid category Electronics in China
     if (purchase.inCountry == Country.China && purchase.category == PurchaseCategory.Electronics)
       ZIO.succeed(true)
-    else if (purchase.inCountry == Country.UK && purchase.category == PurchaseCategory.Weapons && purchase.amount.unwrap > 1000)
+    else if (purchase.inCountry == Country.UK && purchase.category == PurchaseCategory.Gambling && purchase.amount.unwrap > 1000)
       ZIO.succeed(false)
     else if ((purchase.inCountry == Country.Netherlands && purchase.amount.unwrap > 500) || (purchase.inCountry == Country.US && purchase.amount.unwrap > 1000))
      for {

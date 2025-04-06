@@ -18,9 +18,19 @@ Each approach has its plus and minuses, however Declarative encoding makes the s
 
 
 # IDEA for the Health check
-- Find a way to compute at compile-time the requirements for the interpreter, so we don't have to pass unnecessary requirements in the environment
-- Implement as a mermaid
-- Implement as a fully fledged laminar UI that embeds a mermaid diagram. Dynamically traverse this diagram in a step-by-step fashion, as in a debugger with fwd/bwd functionality and key bindings
+- **DROPPED** Find a way to compute at compile-time the requirements for the interpreter, so we don't have to pass unnecessary requirements in the environment 
+- **Done** Implement as a mermaid
+- **Maybe** Implement as a fully fledged laminar UI that embeds a mermaid diagram. Dynamically traverse this diagram in a step-by-step fashion, as in a debugger with fwd/bwd functionality and key bindings
 - Laws: Chcck a list of 2 topics is the same as checking each topic individually and joining them through an `||`
-- Show you can optimize the program before running it
+- **Maybe** Show you can optimize the program before running it
 - Show you can have an always aligned frontend, representing all the possible health situations
+
+# Trace for the presentation
+
+- Show an example for the CC Blocking rule
+- Introduce the CC domain concepts, maybe w/ pictures
+- Show a straightforward implementation, with IFs and external services
+- Show the Declarative/Initial encoding solution
+- Show the steps to build a Declarative solution
+- Show Interpretations: Business logic, business representation, SQL additional Filter
+- Show we can serialize this, and interpret it in a different language, e.g. to derive a some frontend, or to interpret a rule debugger on the browser

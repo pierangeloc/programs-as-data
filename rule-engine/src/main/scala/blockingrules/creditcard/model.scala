@@ -2,6 +2,8 @@ package blockingrules.creditcard
 
 import neotype.Newtype
 
+import java.util.UUID
+
 object model {
 
   object basetypes {
@@ -45,9 +47,25 @@ object model {
     type Amount = Amount.Type
 
     enum PurchaseCategory:
-      // suggest purchase categories that have different risk levels. Not higrisk/lowrisk, but e.g. "electronics", "food", "travel", "entertainment", etc.
-      case Electronics, Food, Travel, Entertainment, Weapons, Crypto, Other
+      case Electronics, Food, Travel, Entertainment, Gambling, Crypto, Other
 
+    object Latitude extends Newtype[Double]
+    type Latitude = Latitude.Type
+    
+    object Longitude extends Newtype[Double]
+    type Longitude = Longitude.Type
+    
+    object ShopName extends Newtype[String]
+    type ShopName = ShopName.Type
+    
+    object ShopId extends Newtype[UUID]
+    type ShopId = ShopId.Type
+    
+    object UserId extends Newtype[UUID]
+    type UserId = UserId.Type
+    
+    
+    
   }
 
   case class CreditCard(
