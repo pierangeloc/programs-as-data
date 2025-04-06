@@ -1,10 +1,7 @@
 package blockingrules.creditcard
 
-import blockingrules.creditcard.model.basetypes.{Latitude, Longitude, PurchaseCategory, ShopId, ShopName, UserId}
+import blockingrules.creditcard.model.basetypes.*
 import zio.URIO
-
-import java.util.UUID
-
 
 /**
  * We want to use the blocking rule information to display shops in a map. We don't want to display shops that we know will be 100% blocked by our

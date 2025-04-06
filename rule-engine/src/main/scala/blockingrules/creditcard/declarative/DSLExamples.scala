@@ -1,7 +1,12 @@
 package blockingrules.creditcard.declarative
 
 import blockingrules.creditcard.declarative.BlockingLogicDeclarative.DSL
-import blockingrules.creditcard.declarative.BlockingLogicDeclarative.DSL.{fraudProbabilityExceeds, purchaseAmountExceeds, purchaseCategoryEquals, purchaseInCountry}
+import blockingrules.creditcard.declarative.BlockingLogicDeclarative.DSL.{
+  fraudProbabilityExceeds,
+  purchaseAmountExceeds,
+  purchaseCategoryEquals,
+  purchaseInCountry
+}
 import blockingrules.creditcard.model.basetypes.{Country, Probability, PurchaseCategory}
 
 object DSLExamples {

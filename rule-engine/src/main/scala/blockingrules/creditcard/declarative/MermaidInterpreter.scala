@@ -3,8 +3,9 @@ package blockingrules.creditcard.declarative
 import blockingrules.creditcard.declarative.BlockingLogicDeclarative.BlockingRule
 import blockingrules.creditcard.declarative.MermaidInterpreter.MermaidRenderable.Style
 import datastructures.Tree
-import zio.{UIO, ZIO}
 import neotype.*
+import zio.{UIO, ZIO}
+
 import java.io.ByteArrayOutputStream
 import java.nio.charset.StandardCharsets
 import java.util.Base64

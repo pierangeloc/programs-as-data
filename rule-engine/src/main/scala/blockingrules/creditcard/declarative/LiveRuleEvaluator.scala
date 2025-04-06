@@ -1,10 +1,10 @@
 package blockingrules.creditcard.declarative
 
-import blockingrules.creditcard.{CreditCardFlaggedService, FraudScoreService}
 import blockingrules.creditcard.declarative.BlockingLogicDeclarative.BlockingRule
 import blockingrules.creditcard.model.{CreditCard, Purchase}
-import zio.{UIO, ZIO}
+import blockingrules.creditcard.{CreditCardFlaggedService, FraudScoreService}
 import neotype.*
+import zio.{UIO, ZIO}
 
 /**
  * With a bit of extra boilerplate, we defined a rigorous set of constructors

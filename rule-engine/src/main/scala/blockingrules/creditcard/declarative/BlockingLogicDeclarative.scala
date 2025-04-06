@@ -1,18 +1,7 @@
 package blockingrules.creditcard.declarative
 
-import blockingrules.creditcard.declarative.MermaidInterpreter.{MermaidRenderable, Shape}
+import blockingrules.creditcard.declarative
 import blockingrules.creditcard.model.basetypes.*
-import blockingrules.creditcard.model.{CreditCard, Purchase}
-import blockingrules.creditcard.{CreditCardFlaggedService, FraudScoreService, declarative}
-import cats.Show
-import datastructures.Tree
-import neotype.*
-import zio.*
-
-import java.io.ByteArrayOutputStream
-import java.nio.charset.StandardCharsets
-import java.util.Base64
-import java.util.zip.GZIPOutputStream
 
 object BlockingLogicDeclarative {
 
