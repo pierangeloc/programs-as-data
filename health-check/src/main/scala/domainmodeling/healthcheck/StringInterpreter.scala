@@ -1,6 +1,6 @@
 package domainmodeling.healthcheck
 
-import domainmodeling.healthcheck.InfraModel.Db.DbType
+import domainmodeling.infra.InfraModel.Db.DbType
 import domainmodeling.healthcheck.db.DoobieZIOdBHealthcheck
 import domainmodeling.healthcheck.http.SttpHealthCheck
 import domainmodeling.healthcheck.kafka.KafkaHealthCheck

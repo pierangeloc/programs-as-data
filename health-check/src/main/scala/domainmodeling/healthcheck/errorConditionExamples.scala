@@ -1,8 +1,8 @@
 package domainmodeling.healthcheck
 
-import domainmodeling.healthcheck.InfraModel.Db.*
-import domainmodeling.healthcheck.InfraModel.HttpConnection.Url
-import domainmodeling.healthcheck.InfraModel.Kafka.*
+import domainmodeling.infra.InfraModel.Db.*
+import domainmodeling.healthcheck.HttpConnection.Url
+import domainmodeling.infra.InfraModel.Kafka.*
 
 object Example1 {
   import Dsl.*

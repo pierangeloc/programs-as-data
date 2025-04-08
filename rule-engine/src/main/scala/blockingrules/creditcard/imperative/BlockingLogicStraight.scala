@@ -22,7 +22,7 @@ object BlockingLogicStraight {
   def isRiskyCategory(purchaseCategory: PurchaseCategory): Boolean =
     purchaseCategory match {
       case PurchaseCategory.Gambling => true
-      case PurchaseCategory.Crypto  => true
+      case PurchaseCategory.Adult  => true
       case _                        => false
     }
 

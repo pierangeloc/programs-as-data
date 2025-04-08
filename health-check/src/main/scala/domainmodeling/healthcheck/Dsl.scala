@@ -1,9 +1,9 @@
 package domainmodeling.healthcheck
 
 import domainmodeling.healthcheck.ErrorCondition.{DBErrorCondition, HttpErrorCondition, KafkaErrorCondition}
-import domainmodeling.healthcheck.InfraModel.Db.{DbType, TableName}
-import domainmodeling.healthcheck.InfraModel.HttpConnection.Url
-import domainmodeling.healthcheck.InfraModel.Kafka.{BootstrapServers, Topic}
+import domainmodeling.infra.InfraModel.Db.{DbType, TableName}
+import domainmodeling.healthcheck.HttpConnection.Url
+import domainmodeling.infra.InfraModel.Kafka.{BootstrapServers, Topic}
 
 object Dsl:
   def dbErrorCondition(dbType: DbType, checkTables: TableName*): ErrorCondition =

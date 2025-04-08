@@ -1,7 +1,7 @@
-package domainmodeling.healthcheck.infra
+package domainmodeling.infra
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
-import domainmodeling.healthcheck.InfraModel.Db.DbType
+import domainmodeling.infra.InfraModel.Db.DbType
 import doobie.Transactor
 import doobie.hikari.HikariTransactor
 import doobie.util.log.LogEvent

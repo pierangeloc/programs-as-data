@@ -28,11 +28,38 @@ lazy val healthCheck = project
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
+  .dependsOn(infraUtils)
 
 lazy val ruleEngine = project
   .in(file("rule-engine"))
   .settings(
     name := "rule-engine",
+    libraryDependencies ++= Seq(
+      "dev.zio"                       %% "zio"                           % "2.1.1",
+      "io.github.kitlangton"          %% "neotype"                       % "0.3.15",
+      "io.github.kitlangton"          %% "neotype-doobie"                % "0.3.15",
+      "org.tpolecat"                  %% "doobie-core"                   % doobieV,
+      "org.tpolecat"                  %% "doobie-hikari"                 % doobieV,
+      "org.tpolecat"                  %% "doobie-postgres"               % doobieV,
+      "org.tpolecat"                  %% "doobie-mysql"                  % doobieV,
+      "dev.zio"                       %% "zio-interop-cats"              % "23.1.0.4",
+      "mysql"                          % "mysql-connector-java"          % "8.0.33",
+      "dev.zio"                       %% "zio-test"                      % "2.1.1" % Test,
+      "dev.zio"                       %% "zio-kafka"                     % "2.11.0",
+      "dev.zio"                       %% "zio-logging-slf4j"             % "2.5.0",
+      "ch.qos.logback"                 % "logback-classic"               % "1.5.6",
+      "com.softwaremill.sttp.client3" %% "async-http-client-backend-zio" % "3.10.3"
+    ),
+    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+  )
+  .dependsOn(dataStructures)
+  .dependsOn(infraUtils)
+
+
+lazy val infraUtils = project
+  .in(file("infra-utils"))
+  .settings(
+    name := "infra-utils",
     libraryDependencies ++= Seq(
       "dev.zio"                       %% "zio"                           % "2.1.1",
       "io.github.kitlangton"          %% "neotype"                       % "0.3.15",

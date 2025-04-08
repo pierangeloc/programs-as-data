@@ -47,7 +47,7 @@ object model {
     type Amount = Amount.Type
 
     enum PurchaseCategory:
-      case Electronics, Food, Travel, Entertainment, Gambling, Crypto, Other
+      case Electronics, Food, Travel, Entertainment, Gambling, Adult, Other
 
     object Latitude extends Newtype[Double]
     type Latitude = Latitude.Type
@@ -63,6 +63,12 @@ object model {
     
     object UserId extends Newtype[UUID]
     type UserId = UserId.Type
+    
+    object Age extends Newtype[Int] {
+      override def validate(input: Int): Boolean | String = if (input >= 0 && input <= 120) true else "Age must be between 0 and 120"
+    }
+    type Age = Age.Type
+    
     
     
     

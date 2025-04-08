@@ -1,6 +1,6 @@
 package domainmodeling.healthcheck.http
 
-import domainmodeling.healthcheck.InfraModel.HttpConnection.Url
+import domainmodeling.healthcheck.HttpConnection.Url
 import domainmodeling.healthcheck.{Message, Source, StatusError}
 import sttp.client3.*
 import sttp.client3.httpclient.zio.*

@@ -31,6 +31,7 @@ object BlockingLogicDeclarative {
     def purchaseAmountExceeds(amount: Double): BlockingRule           = BlockingRule.PurchaseAmountExceeds(amount)
     def fraudProbabilityExceeds(threshold: Probability): BlockingRule = BlockingRule.FraudProbabilityExceeds(threshold)
     def creditCardFlagged: BlockingRule                               = BlockingRule.CreditCardFlagged()
+    
   }
 
 

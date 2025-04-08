@@ -1,6 +1,6 @@
 package domainmodeling.healthcheck.db
 
-import domainmodeling.healthcheck.InfraModel.Db.TableName
+import domainmodeling.infra.InfraModel.Db.TableName
 import domainmodeling.healthcheck.{Message, Source, StatusError}
 import cats.implicits.*
 import doobie.*

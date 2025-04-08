@@ -1,8 +1,8 @@
 package domainmodeling.healthcheck
 
-import domainmodeling.healthcheck.InfraModel.Db.{DbType, TableName}
-import domainmodeling.healthcheck.InfraModel.HttpConnection.Url
-import domainmodeling.healthcheck.InfraModel.Kafka.Topic
+import domainmodeling.infra.InfraModel.Db.{DbType, TableName}
+import domainmodeling.healthcheck.HttpConnection.Url
+import domainmodeling.infra.InfraModel.Kafka.Topic
 import domainmodeling.healthcheck.db.DoobieZIOdBHealthcheck
 import domainmodeling.healthcheck.http.SttpHealthCheck
 import domainmodeling.healthcheck.kafka.KafkaHealthCheck

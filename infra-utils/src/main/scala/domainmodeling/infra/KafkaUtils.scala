@@ -1,4 +1,4 @@
-package domainmodeling.healthcheck.infra
+package domainmodeling.infra
 
 import zio.kafka.admin.AdminClientSettings
 

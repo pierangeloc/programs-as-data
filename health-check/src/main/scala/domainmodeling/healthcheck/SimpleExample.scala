@@ -1,7 +1,7 @@
 package domainmodeling.healthcheck
 
-import domainmodeling.healthcheck.InfraModel.Db.DbType.Postgres
-import domainmodeling.healthcheck.infra.{DbConnectionParams, Doobie, KafkaParams, KafkaUtils}
+import domainmodeling.infra.InfraModel.Db.DbType.Postgres
+import domainmodeling.infra.{DbConnectionParams, Doobie, KafkaParams, KafkaUtils}
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio.kafka.admin.{AdminClient, AdminClientSettings}
 import zio.*

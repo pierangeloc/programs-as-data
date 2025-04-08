@@ -11,7 +11,7 @@ import blockingrules.creditcard.model.basetypes.{Country, Probability, PurchaseC
 
 object DSLExamples {
   import DSL.*
-  val example1 = (purchaseInCountry(Country.UK) && purchaseCategoryEquals(PurchaseCategory.Crypto)) ||
+  val example1 = (purchaseInCountry(Country.UK) && purchaseCategoryEquals(PurchaseCategory.Adult)) ||
     (purchaseInCountry(Country.China) && purchaseCategoryEquals(PurchaseCategory.Electronics)) ||
     (purchaseInCountry(Country.Italy) && purchaseCategoryEquals(PurchaseCategory.Gambling) && purchaseAmountExceeds(
       1000

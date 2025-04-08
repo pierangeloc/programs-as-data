@@ -1,4 +1,4 @@
-package domainmodeling.healthcheck
+package domainmodeling.infra
 
 import neotype.*
 
@@ -27,7 +27,3 @@ object InfraModel:
   
     object BootstrapServers extends Newtype[String]
     type BootstrapServers = BootstrapServers.Type
-  
-  object HttpConnection:
-    object Url extends Newtype[String]
-    type Url = Url.Type
