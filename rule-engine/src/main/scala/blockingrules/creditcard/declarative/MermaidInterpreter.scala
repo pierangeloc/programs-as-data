@@ -90,6 +90,8 @@ object MermaidInterpreter {
             MermaidRenderable.Render(Shape.renderLabel(s""""P[Fraud] > ${threshold.unwrap}"""", Shape.RoundedSquare))
           case BlockingRule.CreditCardFlagged() =>
             MermaidRenderable.Render(Shape.renderLabel(s""""CC Flagged"""", Shape.RoundedSquare))
+          case blockingrules.creditcard.declarative.BlockingLogicDeclarative.BlockingRule.
+          ShopIsBlacklisted() => MermaidRenderable.Render(Shape.renderLabel(s""""Shop blacklisted"""", Shape.RoundedSquare))
     }
 
   def makeTree(rule: BlockingRule): Tree[BlockingRule] = rule match {

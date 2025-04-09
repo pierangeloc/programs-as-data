@@ -1,5 +1,6 @@
 package blockingrules.creditcard.declarative
 
+import blockingrules.creditcard.declarative.AccessRules.ShopRepository
 import blockingrules.creditcard.declarative.BlockingLogicDeclarative.BlockingRule
 import blockingrules.creditcard.model.{CreditCard, Purchase}
 import blockingrules.creditcard.{CreditCardFlaggedService, FraudScoreService}
@@ -18,10 +19,10 @@ object LiveRuleEvaluator {
                   )
 
   private def purchaseOccursInCountry(rule: BlockingRule.PurchaseOccursInCountry)(input: Input): UIO[Boolean] =
-    ZIO.succeed(input.purchase.inCountry == rule.country)
+    ZIO.succeed(input.purchase.shop.country == rule.country)
 
   private def purchaseCategoryEquals(rule: BlockingRule.PurchaseCategoryEquals)(input: Input): UIO[Boolean] =
-    ZIO.succeed(input.purchase.category == rule.purchaseCategory)
+    ZIO.succeed(input.purchase.shop.categories contains rule.purchaseCategory)
 
   private def purchaseAmountExceeds(rule: BlockingRule.PurchaseAmountExceeds)(input: Input): UIO[Boolean] =
     ZIO.succeed(input.purchase.amount.unwrap > rule.amount)
@@ -36,7 +37,7 @@ object LiveRuleEvaluator {
       .getFraudScore(input.creditCard, input.purchase)
       .map(score => score.unwrap > rule.threshold.unwrap)
 
-  def evaluate(rule: BlockingRule, ccFlaggedService: CreditCardFlaggedService, fraudScoreService: FraudScoreService)(
+  def evaluate(rule: BlockingRule, ccFlaggedService: CreditCardFlaggedService, fraudScoreService: FraudScoreService, shopRepository: ShopRepository)(
     input: Input
   ): UIO[Boolean] = {
     def eval(rule: BlockingRule): UIO[Boolean] = rule match {
@@ -51,6 +52,7 @@ object LiveRuleEvaluator {
         fraudProbability(BlockingRule.FraudProbabilityExceeds(threshold), fraudScoreService)(input)
       case BlockingRule.And(l, r) => eval(l).zipWith(eval(r))(_ && _)
       case BlockingRule.Or(l, r)  => eval(l).zipWith(eval(r))(_ || _)
+      case BlockingRule.ShopIsBlacklisted() => shopRepository.isBlacklisted(input.purchase.shop.id)
     }
 
     eval(rule)

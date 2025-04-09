@@ -11,12 +11,12 @@ import blockingrules.creditcard.model.basetypes.{Country, Probability, PurchaseC
 
 object DSLExamples {
   import DSL.*
-  val example1 = (purchaseInCountry(Country.UK) && purchaseCategoryEquals(PurchaseCategory.Adult)) ||
-    (purchaseInCountry(Country.China) && purchaseCategoryEquals(PurchaseCategory.Electronics)) ||
-    (purchaseInCountry(Country.Italy) && purchaseCategoryEquals(PurchaseCategory.Gambling) && purchaseAmountExceeds(
+  val example1 = (purchaseInOneOfCountries(Country.UK) && purchaseCategoryIsOneOf(PurchaseCategory.Adult)) ||
+    (purchaseInOneOfCountries(Country.China) && purchaseCategoryIsOneOf(PurchaseCategory.Electronics)) ||
+    (purchaseInOneOfCountries(Country.Italy) && purchaseCategoryIsOneOf(PurchaseCategory.Gambling) && purchaseAmountExceeds(
       1000
     )) ||
-    ((purchaseInCountry(Country.Netherlands) && purchaseAmountExceeds(500)) || (purchaseInCountry(
+    ((purchaseInOneOfCountries(Country.Netherlands) && purchaseAmountExceeds(500)) || (purchaseInOneOfCountries(
       Country.US
     ) && purchaseAmountExceeds(1000))) && fraudProbabilityExceeds(Probability(0.8))
 }

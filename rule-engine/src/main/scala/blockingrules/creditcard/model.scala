@@ -1,5 +1,6 @@
 package blockingrules.creditcard
 
+import blockingrules.creditcard.declarative.AccessRules.Shop
 import neotype.Newtype
 
 import java.util.UUID
@@ -89,8 +90,7 @@ object model {
     id: basetypes.Id,
     creditCardId: basetypes.Id,
     amount: basetypes.Amount,
-    inCountry: basetypes.Country,
-    category: basetypes.PurchaseCategory
+    shop: Shop 
   )
 
 }

@@ -37,16 +37,16 @@ object BlockingLogicStraight {
    *  5. The plus of an _interpretation_ is that it can be synthesized even by an AI model (not LLM) and deployed, A/B tested etc
    */
   def isBlocked(creditCard: CreditCard, purchase: Purchase): URIO[FraudScoreService, Boolean] =
-    if (creditCard.forbiddenCountries.contains(purchase.inCountry))
+    if (creditCard.forbiddenCountries.contains(purchase.shop.country))
       ZIO.succeed(true)
-    else if (purchase.inCountry == Country.UK && isRiskyCategory(purchase.category))
+    else if (purchase.shop.country == Country.UK && purchase.shop.categories.exists(isRiskyCategory))
       ZIO.succeed(true)
     else // forbid category Electronics in China
-    if (purchase.inCountry == Country.China && purchase.category == PurchaseCategory.Electronics)
+    if (purchase.shop.country == Country.China && purchase.shop.categories.contains(PurchaseCategory.Electronics))
       ZIO.succeed(true)
-    else if (purchase.inCountry == Country.UK && purchase.category == PurchaseCategory.Gambling && purchase.amount.unwrap > 1000)
+    else if (purchase.shop.country == Country.UK && purchase.shop.categories.contains(PurchaseCategory.Gambling) && purchase.amount.unwrap > 1000)
       ZIO.succeed(false)
-    else if ((purchase.inCountry == Country.Netherlands && purchase.amount.unwrap > 500) || (purchase.inCountry == Country.US && purchase.amount.unwrap > 1000))
+    else if ((purchase.shop.country == Country.Netherlands && purchase.amount.unwrap > 500) || (purchase.shop.country == Country.US && purchase.amount.unwrap > 1000))
      for {
       fss <- ZIO.service[FraudScoreService]
       score <- fss.getFraudScore(creditCard, purchase)

@@ -11,7 +11,7 @@ lazy val healthCheck = project
   .settings(
     name := "health-check",
     libraryDependencies ++= Seq(
-      "dev.zio"                       %% "zio"                           % "2.1.1",
+      "dev.zio"                       %% "zio"                           % "2.1.15",
       "io.github.kitlangton"          %% "neotype"                       % "0.3.15",
       "io.github.kitlangton"          %% "neotype-doobie"                % "0.3.15",
       "org.tpolecat"                  %% "doobie-core"                   % doobieV,
@@ -20,7 +20,7 @@ lazy val healthCheck = project
       "org.tpolecat"                  %% "doobie-mysql"                  % doobieV,
       "dev.zio"                       %% "zio-interop-cats"              % "23.1.0.4",
       "mysql"                          % "mysql-connector-java"          % "8.0.33",
-      "dev.zio"                       %% "zio-test"                      % "2.1.1" % Test,
+      "dev.zio"                       %% "zio-test"                      % "2.1.15" % Test,
       "dev.zio"                       %% "zio-kafka"                     % "2.11.0",
       "dev.zio"                       %% "zio-logging-slf4j"             % "2.5.0",
       "ch.qos.logback"                 % "logback-classic"               % "1.5.6",
@@ -35,7 +35,7 @@ lazy val ruleEngine = project
   .settings(
     name := "rule-engine",
     libraryDependencies ++= Seq(
-      "dev.zio"                       %% "zio"                           % "2.1.1",
+      "dev.zio"                       %% "zio"                           % "2.1.15",
       "io.github.kitlangton"          %% "neotype"                       % "0.3.15",
       "io.github.kitlangton"          %% "neotype-doobie"                % "0.3.15",
       "org.tpolecat"                  %% "doobie-core"                   % doobieV,
@@ -44,7 +44,7 @@ lazy val ruleEngine = project
       "org.tpolecat"                  %% "doobie-mysql"                  % doobieV,
       "dev.zio"                       %% "zio-interop-cats"              % "23.1.0.4",
       "mysql"                          % "mysql-connector-java"          % "8.0.33",
-      "dev.zio"                       %% "zio-test"                      % "2.1.1" % Test,
+      "dev.zio"                       %% "zio-test"                      % "2.1.15" % Test,
       "dev.zio"                       %% "zio-kafka"                     % "2.11.0",
       "dev.zio"                       %% "zio-logging-slf4j"             % "2.5.0",
       "ch.qos.logback"                 % "logback-classic"               % "1.5.6",
@@ -61,7 +61,7 @@ lazy val infraUtils = project
   .settings(
     name := "infra-utils",
     libraryDependencies ++= Seq(
-      "dev.zio"                       %% "zio"                           % "2.1.1",
+      "dev.zio"                       %% "zio"                           % "2.1.15",
       "io.github.kitlangton"          %% "neotype"                       % "0.3.15",
       "io.github.kitlangton"          %% "neotype-doobie"                % "0.3.15",
       "org.tpolecat"                  %% "doobie-core"                   % doobieV,
@@ -70,7 +70,7 @@ lazy val infraUtils = project
       "org.tpolecat"                  %% "doobie-mysql"                  % doobieV,
       "dev.zio"                       %% "zio-interop-cats"              % "23.1.0.4",
       "mysql"                          % "mysql-connector-java"          % "8.0.33",
-      "dev.zio"                       %% "zio-test"                      % "2.1.1" % Test,
+      "dev.zio"                       %% "zio-test"                      % "2.1.15" % Test,
       "dev.zio"                       %% "zio-kafka"                     % "2.11.0",
       "dev.zio"                       %% "zio-logging-slf4j"             % "2.5.0",
       "ch.qos.logback"                 % "logback-classic"               % "1.5.6",
@@ -84,7 +84,7 @@ lazy val dataStructures = project
   .settings(
     name := "data-structures",
     libraryDependencies ++= Seq(
-      "dev.zio"                       %% "zio"                           % "2.1.1",
+      "dev.zio"                       %% "zio"                           % "2.1.15",
       "io.github.kitlangton"          %% "neotype"                       % "0.3.15",
       "io.github.kitlangton"          %% "neotype-doobie"                % "0.3.15",
       "org.tpolecat"                  %% "doobie-core"                   % doobieV,
@@ -93,7 +93,7 @@ lazy val dataStructures = project
       "org.tpolecat"                  %% "doobie-mysql"                  % doobieV,
       "dev.zio"                       %% "zio-interop-cats"              % "23.1.0.4",
       "mysql"                          % "mysql-connector-java"          % "8.0.33",
-      "dev.zio"                       %% "zio-test"                      % "2.1.1" % Test,
+      "dev.zio"                       %% "zio-test"                      % "2.1.15" % Test,
       "dev.zio"                       %% "zio-kafka"                     % "2.11.0",
       "dev.zio"                       %% "zio-logging-slf4j"             % "2.5.0",
       "ch.qos.logback"                 % "logback-classic"               % "1.5.6",
@@ -113,7 +113,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "domain-modeling",
     libraryDependencies ++= Seq(
-      "dev.zio"                       %% "zio"                           % "2.1.1",
+      "dev.zio"                       %% "zio"                           % "2.1.15",
       "io.github.kitlangton"          %% "neotype"                       % "0.3.15",
       "io.github.kitlangton"          %% "neotype-doobie"                % "0.3.15",
       "org.tpolecat"                  %% "doobie-core"                   % doobieV,
@@ -122,7 +122,7 @@ lazy val root = (project in file("."))
       "org.tpolecat"                  %% "doobie-mysql"                  % doobieV,
       "dev.zio"                       %% "zio-interop-cats"              % "23.1.0.4",
       "mysql"                          % "mysql-connector-java"          % "8.0.33",
-      "dev.zio"                       %% "zio-test"                      % "2.1.1" % Test,
+      "dev.zio"                       %% "zio-test"                      % "2.1.15" % Test,
       "dev.zio"                       %% "zio-kafka"                     % "2.11.0",
       "dev.zio"                       %% "zio-logging-slf4j"             % "2.5.0",
       "ch.qos.logback"                 % "logback-classic"               % "1.5.6",
