@@ -47,7 +47,7 @@ object model {
     object Amount extends Newtype[Double]
     type Amount = Amount.Type
 
-    enum PurchaseCategory:
+    enum ShopCategory:
       case Electronics, Food, Travel, Entertainment, Gambling, Adult, Other
 
     object Latitude extends Newtype[Double]

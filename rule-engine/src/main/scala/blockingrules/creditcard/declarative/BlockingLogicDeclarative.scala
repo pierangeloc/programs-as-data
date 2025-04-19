@@ -15,7 +15,7 @@ object BlockingLogicDeclarative {
     case class Or(l: BlockingRule, r: BlockingRule)  extends BlockingRule
 
     case class PurchaseOccursInCountry(country: Country)                  extends BlockingRule
-    case class PurchaseCategoryEquals(purchaseCategory: PurchaseCategory) extends BlockingRule
+    case class PurchaseCategoryEquals(purchaseCategory: ShopCategory) extends BlockingRule
     case class PurchaseAmountExceeds(amount: Double)                      extends BlockingRule
     case class FraudProbabilityExceeds(threshold: Probability)            extends BlockingRule
     case class CreditCardFlagged()                                        extends BlockingRule
@@ -24,10 +24,10 @@ object BlockingLogicDeclarative {
 
   object DSL {
     private def purchaseInCountry(country: Country): BlockingRule           = BlockingRule.PurchaseOccursInCountry(country)
-    def purchaseInOneOfCountries(countries: Country*): BlockingRule = countries.map(purchaseInCountry).reduce(_ || _)
-    private def purchaseCategoryEquals(purchaseCategory: PurchaseCategory): BlockingRule =
+    def purchaseCountryIsOneOf(countries: Country*): BlockingRule = countries.map(purchaseInCountry).reduce(_ || _)
+    private def purchaseCategoryEquals(purchaseCategory: ShopCategory): BlockingRule =
       BlockingRule.PurchaseCategoryEquals(purchaseCategory)
-    def purchaseCategoryIsOneOf(purchaseCategories: PurchaseCategory*): BlockingRule =
+    def purchaseCategoryIsOneOf(purchaseCategories: ShopCategory*): BlockingRule =
       purchaseCategories.map(purchaseCategoryEquals).reduce(_ || _)
     def purchaseAmountExceeds(amount: Double): BlockingRule           = BlockingRule.PurchaseAmountExceeds(amount)
     def fraudProbabilityExceeds(threshold: Probability): BlockingRule = BlockingRule.FraudProbabilityExceeds(threshold)

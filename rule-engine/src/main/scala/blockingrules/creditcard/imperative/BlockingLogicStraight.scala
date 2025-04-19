@@ -1,7 +1,7 @@
 package blockingrules.creditcard.imperative
 
 import blockingrules.creditcard.FraudScoreService
-import blockingrules.creditcard.model.basetypes.{Country, PurchaseCategory}
+import blockingrules.creditcard.model.basetypes.{Country, ShopCategory}
 import blockingrules.creditcard.model.{CreditCard, Purchase}
 import neotype.*
 import zio.*
@@ -19,10 +19,10 @@ import zio.*
  */
 object BlockingLogicStraight {
 
-  def isRiskyCategory(purchaseCategory: PurchaseCategory): Boolean =
+  def isRiskyCategory(purchaseCategory: ShopCategory): Boolean =
     purchaseCategory match {
-      case PurchaseCategory.Gambling => true
-      case PurchaseCategory.Adult  => true
+      case ShopCategory.Gambling => true
+      case ShopCategory.Adult  => true
       case _                        => false
     }
 
@@ -42,9 +42,9 @@ object BlockingLogicStraight {
     else if (purchase.shop.country == Country.UK && purchase.shop.categories.exists(isRiskyCategory))
       ZIO.succeed(true)
     else // forbid category Electronics in China
-    if (purchase.shop.country == Country.China && purchase.shop.categories.contains(PurchaseCategory.Electronics))
+    if (purchase.shop.country == Country.China && purchase.shop.categories.contains(ShopCategory.Electronics))
       ZIO.succeed(true)
-    else if (purchase.shop.country == Country.UK && purchase.shop.categories.contains(PurchaseCategory.Gambling) && purchase.amount.unwrap > 1000)
+    else if (purchase.shop.country == Country.UK && purchase.shop.categories.contains(ShopCategory.Gambling) && purchase.amount.unwrap > 1000)
       ZIO.succeed(false)
     else if ((purchase.shop.country == Country.Netherlands && purchase.amount.unwrap > 500) || (purchase.shop.country == Country.US && purchase.amount.unwrap > 1000))
      for {

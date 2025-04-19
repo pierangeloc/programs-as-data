@@ -1,18 +1,34 @@
-# Straight Implementation of Health Checks
+# Programs as Values
+
+---
+*** Conclusion ***
+- Definition: Establish a precise, close language to solve a class of problems
+- Solution: The flexibility of defining different interpreters means we are not bound to a technology (ZIO, pekko/akka, CE)
+- Documentation: From the trenches: the produced Mermaid graph has become the de-facto way of reasoning from business to present business rules or to ask for changes                          
+- Serialization: We can persist our program, which is good for auditing. Also we can interpret our language, serialized e.g. into JSON, in different languages. This gives the flesibility of using the most powerful language to describe our solution, and interpret it in other languages
+
+--- 
+## **Problem 1 - Health Check**
+
+**Goal**: Check the health of a service, based on:
+
+  - Database
+    
+  - Kafka
+   
+  - HTTP dependencies
 
 ---
 
-## **Problem Statement**
+## **Problem 1 - Health Check**
 
-- **Goal**: Check the health of our system.
-    - Database
-    - Kafka
-    - HTTP dependencies
+**Initial solution**: Straightforward implementation leveraging:
 
-- **Initial solution**: A straightforward implementation leveraging:
-    - **Doobie** for database health checks
-    - **zio-kafka** for Kafka
-    - **Sttp** for HTTP
+  - **Doobie** for database health checks
+  
+  - **zio-kafka** for Kafka
+  
+  - **Sttp** for HTTP
 
 ---
 

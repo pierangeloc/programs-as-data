@@ -7,6 +7,7 @@ import domainmodeling.healthcheck.db.DoobieZIOdBHealthcheck
 import domainmodeling.healthcheck.http.SttpHealthCheck
 import domainmodeling.healthcheck.kafka.KafkaHealthCheck
 import doobie.Transactor
+import sttp.client3.httpclient.zio.SttpClient
 import zio.*
 import zio.kafka.admin.AdminClient
 
@@ -26,7 +27,7 @@ import zio.kafka.admin.AdminClient
  * This is because the `checkErrors` method is a mix of business logic and side effects.
  */
 object StraightImplementation {
-  def checkErrors() = {
+  def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, List[StatusError]] = {
     def dbCheck(dbType: DbType, checkTables: List[TableName]): ZIO[Transactor[Task], Nothing, List[StatusError]] =
       for {
         res <- dbType match

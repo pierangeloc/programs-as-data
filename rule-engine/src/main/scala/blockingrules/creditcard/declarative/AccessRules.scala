@@ -30,7 +30,7 @@ object AccessRules {
   }
 
   // TODO: move shop in the model with all the rest
-  case class Shop(id: ShopId, name: ShopName, country: Country, categories: List[PurchaseCategory])
+  case class Shop(id: ShopId, name: ShopName, country: Country, categories: List[ShopCategory])
 
   trait ShopRepository {
     def getShops(filter: ShopRepository.Filter): UIO[List[Shop]]
@@ -39,16 +39,14 @@ object AccessRules {
 
   object ShopRepository {
     case class Filter(
-      excludeCountries: Option[List[Country]],
-      excludeCategories: Option[List[PurchaseCategory]],
+      excludeCountriesAndCategories: Option[List[Filter.CountryCategory]],
       excludeBlacklisted: Option[Boolean]
     ) { self =>
 
       import cats.implicits.*
       def ||(other: Filter): Filter =
         Filter(
-          excludeCountries combine other.excludeCountries,
-          excludeCategories combine other.excludeCategories,
+          excludeCountriesAndCategories combine other.excludeCountriesAndCategories,
           (excludeBlacklisted, other.excludeBlacklisted) match {
             case (b, None)            => b
             case (None, b)            => b
@@ -66,8 +64,7 @@ object AccessRules {
       // TODO:think further about this one
       def &&(other: Filter): Filter =
         Filter(
-          intersect(excludeCountries, other.excludeCountries),
-          intersect(excludeCategories, other.excludeCategories),
+          intersect(excludeCountriesAndCategories, other.excludeCountriesAndCategories),
           (excludeBlacklisted, other.excludeBlacklisted) match {
             case (Some(true), Some(true)) => Some(true)
             case (None, Some(b))          => Some(b)
@@ -80,7 +77,11 @@ object AccessRules {
     }
 
     object Filter {
-      val allPass = Filter(None, None, None)
+      val allPass = Filter(None, None)
+
+      case class CountryCategory(country: Option[Country], category: Option[ShopCategory])
+
+      def and(cc1: CountryCategory, cc2: CountryCategory)
     }
   }
 
