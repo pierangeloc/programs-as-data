@@ -79,6 +79,8 @@ Now, while this is a pedagogical example, in real business cases with complex bu
 ### Problem nr 3: solution bound to a specific technology
 Another issue we see here is that this solution is bound to use ZIO, and Doobie. If our team deals with services developed using different technologies, e.g. Slick/Future, we need to reimplement from scratch a totally different function, with no attention guaranteed between the equivalence of the 2 functions. We can easily slip over some details while implementing a Future-based version, vs a ZIO-based one.
 
+_Notice that the 3 problems are orthogonal, meaning that solving one should have no impact on the other 2. 
+
 ### Solution: Define a language to specify the problem
 The first step is to start from the definition of our problem, rather than from its solution.
 We use algebraic data types (sum types, product types) to describe our problem. Here we want to describe the ways in which our application can fail, or rather the possible ways in which an `ErrorCondition` can arise. An `ErrorCondition` can arise if one of these simple error situations occur
@@ -175,8 +177,9 @@ Let's focus again on our problems:
 2. Divergence implementation vs documentation
 3. Solution bound to a specific technology
 
-Here we improved on 1. Our DSL is succinctly conveying what we want to do
-About 3, if we have a service that is using Futures and Slick, we could just write another interpreter
+Here we improved on 1. Our DSL is succinctly conveying what we want to do.
+
+About 3, if we have a service that is using Futures and Slick, we could just write another interpreter, while keeping the clarity of intent unaltered (Orthogonality)
 
 
 
