@@ -1,3 +1,0 @@
-package domainmodeling.healthcheck
-
-class FutureSlickInterpreter

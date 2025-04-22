@@ -1,10 +1,11 @@
-ThisBuild / scalaVersion     := "3.3.5"
-ThisBuild / version          := "0.1.0-SNAPSHOT"
-ThisBuild / organization     := "io.tuliplogicbv"
+ThisBuild / scalaVersion := "3.3.5"
+ThisBuild / version      := "0.1.0-SNAPSHOT"
+ThisBuild / organization := "io.tuliplogicbv"
 
 ThisBuild / scalacOptions ++= Seq()
 
 val doobieV = "1.0.0-RC7"
+val slickV  = "3.5.2"
 
 lazy val healthCheck = project
   .in(file("health-check"))
@@ -24,7 +25,9 @@ lazy val healthCheck = project
       "dev.zio"                       %% "zio-kafka"                     % "2.11.0",
       "dev.zio"                       %% "zio-logging-slf4j"             % "2.5.0",
       "ch.qos.logback"                 % "logback-classic"               % "1.5.6",
-      "com.softwaremill.sttp.client3" %% "async-http-client-backend-zio" % "3.10.3"
+      "com.softwaremill.sttp.client3" %% "async-http-client-backend-zio" % "3.10.3",
+      "com.typesafe.slick"            %% "slick"                         % slickV,
+      "com.typesafe.slick"            %% "slick-hikaricp"                % slickV
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
@@ -55,7 +58,6 @@ lazy val ruleEngine = project
   .dependsOn(dataStructures)
   .dependsOn(infraUtils)
 
-
 lazy val infraUtils = project
   .in(file("infra-utils"))
   .settings(
@@ -77,7 +79,8 @@ lazy val infraUtils = project
       "com.softwaremill.sttp.client3" %% "async-http-client-backend-zio" % "3.10.3"
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
-  ).dependsOn(dataStructures)
+  )
+  .dependsOn(dataStructures)
 
 lazy val dataStructures = project
   .in(file("data-structures"))
@@ -101,8 +104,6 @@ lazy val dataStructures = project
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
-
-
 
 lazy val root = (project in file("."))
   .aggregate(healthCheck)
@@ -130,4 +131,4 @@ lazy val root = (project in file("."))
     ),
     testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
   )
-*/
+ */

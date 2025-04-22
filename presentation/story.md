@@ -116,7 +116,7 @@ In this way we have all we need to combine basic error conditions into more comp
 Or(DBErrorCondition(DbType.Postgres, List(TableName("user", "access_token"))), HttpErrorCondition(Url("https://license-check.org/check")))
 ```
 
-Here the `Or` is a combinator term, while the other 2 are basic terms. It is handy to introduce some constructors to make the creation of the basic terms. We could add an extension method or just add a method to tbe base trait to facilitate the combination of such terms:
+Here the `Or` is a combinator term, while the other 2 are basic terms. If we introduce some constructors to make the creation of the basic terms easier, we can describe our health check where we just check the  existance of 2 DB tables on Postgres, and an http call that must return a Success code. 
 
 ```scala
 val errorCondition =
@@ -125,10 +125,64 @@ val errorCondition =
 ```
 
 
-So far we didn't think about what we should do to detect such an error condition, but we defined a _precise language to describe our problem. This language is made of base types to describe basic situations, and more complex types, possibly recursive types, to describe the most complex situations.
+So far we didn't think about what we should do to detect such an error condition, but we defined a _precise language_ to describe our problem. This language is made of base types to describe basic situations, and more complex types, including a recursive type, to describe the most complex situations.
+
+### Solution: Solve the problem by attacking the simple parts
+
+Once we have this in place, we need to make this runnable, and this is what goes by as _interpretation_. Interpretation is completely free: we have no constraints coming from our DLS about what we need to do with the data structure we built. 
+
+So if we use ZIO and Doobie, the interpreter that, given our health check definition returns the list of status errors, if any, would be
+
+```scala
+object ZIOInterpreter {
+  def interpret(
+    errorCondition: ErrorCondition
+  ): URIO[Transactor[Task] & SttpClient, List[StatusError]] =
+    errorCondition match
+      case ErrorCondition.DBErrorCondition(DbType.Postgres, checkTables) =>
+        DoobieZIOdBHealthcheck.status(DoobieZIOdBHealthcheck.existsPostgres, checkTables)
+      case ErrorCondition.DBErrorCondition(DbType.MySql, checkTables) =>
+        DoobieZIOdBHealthcheck.status(DoobieZIOdBHealthcheck.existsMySql, checkTables)
+      case ErrorCondition.HttpErrorCondition(url) =>
+        SttpHealthCheck.check(url)
+}
+```
+
+Here the compiler tells us we forgot to cover the recursive term
+
+```scala
+[warn]    |    errorCondition match
+[warn]    |    ^^^^^^^^^^^^^^
+[warn]    |match may not be exhaustive.
+[warn]    |
+[warn]    |It would fail on pattern case: domainmodeling.healthcheck.ErrorCondition.Or(_, _)
+[warn]    |
+```
+
+So let's add it
+```scala
+    errorCondition match
+      case ErrorCondition.Or(left, right) =>
+        interpret(left).zipPar(interpret(right)).map { case (leftErrors, rightErrors) => leftErrors ++ rightErrors }
+      // the basic terms    
+```
+
+With this we have a program that we can attach to our service `ready` endpoint, and have k8s querying it to establish the readiness of our service.
+
+Let's focus again on our problems:
+
+1. Clarity of intent
+2. Divergence implementation vs documentation
+3. Solution bound to a specific technology
+
+Here we improved on 1. Our DSL is succinctly conveying what we want to do
+About 3, if we have a service that is using Futures and Slick, we could just write another interpreter
+
 
 
 ### Approachable approach
 In designing this solution we didn't require understanding HKT (like tagless final does), nor Free Monads, which share some aspects of our solution. We actually restricted what we can do to a very limited set of operations. We didn't allow introducing generic functions, nor map/flatMap, as this gives us the ability to interpret properly the program we build.
 
-The language properties we are leveraging are very basic, and this approach can be replicated almost seamlessly in any language having a decent support for product/sum types, ideally with some sort of pattern matching.
+The language properties we are leveraging are very basic, and this approach can be replicated almost seamlessly in any language having a decent support for product/sum types, ideally with some sort of pattern matching. 
+
+One more thing to notice is that not all DSLs need to be monadic. Monads are a powerful way to combine computations, but not all computations require the power of a monad. Definitely not at high level. When we need to build a low-level language, monads come naturally, and so come applicatives. For high-level languages, such as those used to describe most of our business needs, monads are overkill, and all you need is some simple constructors and combinators.
