@@ -10,9 +10,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object SlickFutureDbHealthCheck {
 
-  def checkPostgresTables(db: slick.jdbc.JdbcBackend#Database, tables: List[TableName])
-                         (implicit ec: ExecutionContext, profile: slick.jdbc.PostgresProfile): Future[List[StatusError]] = {
-    import profile.api._
+  def checkPostgresTables(db: slick.jdbc.JdbcBackend#Database, jdbcProfile: JdbcProfile, tables: List[TableName])
+                         (implicit ec: ExecutionContext): Future[List[StatusError]] = {
+    import jdbcProfile.api._
 
     val futures = tables.map { tableName =>
       val tableName_str = tableName.unwrap
@@ -47,9 +47,9 @@ object SlickFutureDbHealthCheck {
     }
   }
 
-  def checkMySqlTables(db: slick.jdbc.JdbcBackend#Database, tables: List[TableName])
-                      (implicit ec: ExecutionContext, profile: slick.jdbc.MySQLProfile): Future[List[StatusError]] = {
-    import profile.api._
+  def checkMySqlTables(db: slick.jdbc.JdbcBackend#Database, jdbcProfile: JdbcProfile, tables: List[TableName])
+                      (implicit ec: ExecutionContext): Future[List[StatusError]] = {
+    import jdbcProfile.api._
 
     val futures = tables.map { tableName =>
       val tableName_str = tableName.unwrap

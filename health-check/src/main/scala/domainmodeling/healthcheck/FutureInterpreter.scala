@@ -12,15 +12,13 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
 object FutureSlickInterpreter {
-  def interpret(
+  def interpret( db: slick.jdbc.JdbcBackend#Database,
+                 jdbcProfile: slick.jdbc.JdbcProfile,
+                 kafkaClient: KafkaAdminClient,
+                 httpClient: SttpFutureBackend[Future, Any])(
                  errorCondition: ErrorCondition
                )(implicit
-                 ec: ExecutionContext,
-                 db: slick.jdbc.JdbcBackend#Database,
-                 postgresProfile: slick.jdbc.PostgresProfile,
-                 mysqlProfile: slick.jdbc.MySQLProfile,
-                 kafkaClient: KafkaAdminClient,
-                 httpClient: SttpFutureBackend[Future, Any]
+                 ec: ExecutionContext
                ): Future[List[StatusError]] = {
 
     // Helper method to handle timeouts consistently
@@ -46,8 +44,8 @@ object FutureSlickInterpreter {
     errorCondition match {
       case ErrorCondition.Or(left, right) =>
         // Run both checks in parallel
-        val leftFuture = interpret(left)
-        val rightFuture = interpret(right)
+        val leftFuture = interpret(db, jdbcProfile, kafkaClient, httpClient)(left)
+        val rightFuture = interpret(db, jdbcProfile, kafkaClient, httpClient)(right)
 
         // Combine results
         for {
@@ -57,13 +55,13 @@ object FutureSlickInterpreter {
 
       case ErrorCondition.DBErrorCondition(DbType.Postgres, checkTables) =>
         withTimeout(
-          SlickFutureDbHealthCheck.checkPostgresTables(db, checkTables),
+          SlickFutureDbHealthCheck.checkPostgresTables(db,jdbcProfile, checkTables),
           List(StatusError(Source("Postgres"), Message("Database operation timed out")))
         )
 
       case ErrorCondition.DBErrorCondition(DbType.MySql, checkTables) =>
         withTimeout(
-          SlickFutureDbHealthCheck.checkMySqlTables(db, checkTables),
+          SlickFutureDbHealthCheck.checkMySqlTables(db, jdbcProfile, checkTables),
           List(StatusError(Source("MySQL"), Message("Database operation timed out")))
         )
 
