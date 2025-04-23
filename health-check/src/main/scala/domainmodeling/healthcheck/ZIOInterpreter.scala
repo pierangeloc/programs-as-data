@@ -31,9 +31,6 @@ object ZIOInterpreter {
 
 }
 
-///make a new Animal Trait
-
-
 /*
  * Experimental:
 

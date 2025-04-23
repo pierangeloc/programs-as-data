@@ -25,7 +25,7 @@ object SimpleExample extends ZIOAppDefault:
 
   def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =
     (zio.Console.printLine("Performing Healthcheck as configured:") *>
-      zio.Console.printLine(StringInterpreter.interpret(Example1.errorCondition)) *>
+      zio.Console.printLine(DocumentationInterpreter.interpret(Example1.errorCondition))) /**>
       
       ZIOInterpreter
         .interpret(Example1.errorCondition)
@@ -37,4 +37,4 @@ object SimpleExample extends ZIOAppDefault:
         kafkaParams,
         AdminClient.live,
         HttpClientZioBackend.layer()
-      )
+      )*/

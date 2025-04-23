@@ -81,23 +81,23 @@ object AccessRules {
 
       case class CountryCategory(country: Option[Country], category: Option[ShopCategory])
 
-      def and(cc1: CountryCategory, cc2: CountryCategory)
+//      def and(cc1: CountryCategory, cc2: CountryCategory)
     }
   }
 
-  object FilterInterpreter {
-    def apply(blockingRule: BlockingRule): ShopRepository.Filter = blockingRule match
-      case BlockingRule.And(l, r) => apply(l) && apply(r)
-      case BlockingRule.Or(l, r)  => apply(l) || apply(r)
-      case BlockingRule.PurchaseOccursInCountry(country) =>
-        ShopRepository.Filter.allPass.copy(excludeCountries = Some(List(country)))
-      case BlockingRule.PurchaseCategoryEquals(purchaseCategory) =>
-        ShopRepository.Filter.allPass.copy(excludeCategories = Some(List(purchaseCategory)))
-      case BlockingRule.PurchaseAmountExceeds(_)      => ShopRepository.Filter.allPass
-      case BlockingRule.FraudProbabilityExceeds(_) => ShopRepository.Filter.allPass
-      case BlockingRule.CreditCardFlagged()                => ShopRepository.Filter.allPass
-      case blockingrules.creditcard.declarative.BlockingLogicDeclarative.BlockingRule.ShopIsBlacklisted() =>
-        ShopRepository.Filter.allPass.copy(excludeBlacklisted = Some(true))
-  }
+//  object FilterInterpreter {
+//    def apply(blockingRule: BlockingRule): ShopRepository.Filter = blockingRule match
+//      case BlockingRule.And(l, r) => apply(l) && apply(r)
+//      case BlockingRule.Or(l, r)  => apply(l) || apply(r)
+//      case BlockingRule.PurchaseOccursInCountry(country) =>
+//        ShopRepository.Filter.allPass.copy(excludeCountries = Some(List(country)))
+//      case BlockingRule.PurchaseCategoryEquals(purchaseCategory) =>
+//        ShopRepository.Filter.allPass.copy(excludeCategories = Some(List(purchaseCategory)))
+//      case BlockingRule.PurchaseAmountExceeds(_)      => ShopRepository.Filter.allPass
+//      case BlockingRule.FraudProbabilityExceeds(_) => ShopRepository.Filter.allPass
+//      case BlockingRule.CreditCardFlagged()                => ShopRepository.Filter.allPass
+//      case blockingrules.creditcard.declarative.BlockingLogicDeclarative.BlockingRule.ShopIsBlacklisted() =>
+//        ShopRepository.Filter.allPass.copy(excludeBlacklisted = Some(true))
+//  }
 
 }

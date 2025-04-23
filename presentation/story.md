@@ -8,7 +8,7 @@ Or another one: _In a purchase approval system, I see 30 transactions refused ou
 
 Or in a Shop visualization mobile app displaying shops on Google Maps, _We were supposed to see 10 locations but we see only 8. Why is that?_
 
-### Problem nr 1: clarity of intent
+### The promises of Functional Programming
 
 When I started learning FP with Scala, one selling point was "I want to focus on the _what_ rather than the _how_ ". And for sure
 
@@ -60,6 +60,8 @@ def checkErrors() =
     .map(_.flatten)
 ```
 
+### Problem nr 1: clarity of intent
+
 Is this focused on the what or on the how? From a FP perspective, it adheres to all the principles of FP:
 
 - No mutability
@@ -67,7 +69,7 @@ Is this focused on the what or on the how? From a FP perspective, it adheres to 
 
 But to understand what this does, we need to deep dive into the tale given by this piece of code. There's a function that checks the DB, by checking some tables exist (show code). Then a function that checks if the expected Kafka topics are reachable, and a function that checks a given URL.
 
-So we have a problem of _readability_ of this function.
+In other words we have a problem of _readability_ of this function.
 
 Another problem is that this function is unconstrained. We could squeeze in there any computation or effect, making it do more than it should, e.g. we could send some unrelated message at every health check.
 
@@ -79,7 +81,8 @@ Now, while this is a pedagogical example, in real business cases with complex bu
 ### Problem nr 3: solution bound to a specific technology
 Another issue we see here is that this solution is bound to use ZIO, and Doobie. If our team deals with services developed using different technologies, e.g. Slick/Future, we need to reimplement from scratch a totally different function, with no attention guaranteed between the equivalence of the 2 functions. We can easily slip over some details while implementing a Future-based version, vs a ZIO-based one.
 
-_Notice that the 3 problems are orthogonal, meaning that solving one should have no impact on the other 2. 
+### Orthogonality
+We want to address the 3 problems we just explained, in an orthogonal way. When we talk about orthogonality we mean "independence of the solutions", or solving one problem should not affect the resolution of the other problems, just like in a vector space with inner product we can't express orthogonal vectors in terms of the others
 
 ### Solution: Define a language to specify the problem
 The first step is to start from the definition of our problem, rather than from its solution.
@@ -179,8 +182,67 @@ Let's focus again on our problems:
 
 Here we improved on 1. Our DSL is succinctly conveying what we want to do.
 
-About 3, if we have a service that is using Futures and Slick, we could just write another interpreter, while keeping the clarity of intent unaltered (Orthogonality)
+About point 3, if we have a service that is using Futures and Slick rather than ZIO and Doobie, we could just write another interpreter, while keeping the clarity of intent unaltered (Orthogonality):
 
+```scala
+def interpret( db: slick.jdbc.JdbcBackend#Database,
+                 jdbcProfile: slick.jdbc.JdbcProfile,
+                 httpClient: SttpFutureBackend[Future, Any])(
+                 errorCondition: ErrorCondition
+               )(implicit
+                 ec: ExecutionContext
+               ): Future[List[StatusError]] = {
+  errorCondition match {
+    case ErrorCondition.DBErrorCondition(DbType.Postgres, checkTables) =>
+        SlickFutureDbHealthCheck.checkPostgresTables(db,jdbcProfile, checkTables),
+
+    case ErrorCondition.DBErrorCondition(DbType.MySql, checkTables) =>
+        SlickFutureDbHealthCheck.checkMySqlTables(db, jdbcProfile, checkTables),
+    
+    case ErrorCondition.HttpErrorCondition(url) =>
+      withTimeout(
+        FutureHttpHealthCheck.check(httpClient, url),
+        List(StatusError(Source("Http"), Message("Http call timed out")))
+      )
+
+    case ErrorCondition.Or(left, right) =>
+      // Run both checks in parallel
+      val leftFuture = interpret(db, jdbcProfile, kafkaClient, httpClient)(left)
+      val rightFuture = interpret(db, jdbcProfile, kafkaClient, httpClient)(right)
+
+      // Combine results
+      for {
+        leftErrors <- leftFuture
+        rightErrors <- rightFuture
+      } yield leftErrors ++ rightErrors
+
+  }
+}
+```
+
+Let's now tackle point 2, the divergence between documentation and implementation. Rather than documenting our code, or writing a Confluence page doomed to oblivion, let's interpret our blocking rule as a String
+
+```scala
+def interpret(
+                 errorCondition: ErrorCondition
+               ): String = //...
+```
+and we can document the health rules as part of our CI, or when the service bootstraps (SHOW A SCREENSHOT HERE)
+
+```ansi
+Either of:
+Database Check (Postgres):
+  Required tables: customer, access_token
+OR
+Kafka Check:
+  Required topics: events
+OR
+HTTP Check:
+  URL: http://localhost:8080/status/200
+```
+
+## Keeping things aligned as code evolves
+// add Kafka and show how things are simple
 
 
 ### Approachable approach
