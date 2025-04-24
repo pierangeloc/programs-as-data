@@ -227,7 +227,7 @@ def interpret(
                  errorCondition: ErrorCondition
                ): String = //...
 ```
-and we can document the health rules as part of our CI, or when the service bootstraps (SHOW A SCREENSHOT HERE)
+and we can document the health rules as part of our CI, or when the service bootstraps (SHOW A SCREENSHOT HERE, as we want to see the colors)
 
 ```ansi
 Either of:
@@ -242,7 +242,56 @@ HTTP Check:
 ```
 
 ## Keeping things aligned as code evolves
-// add Kafka and show how things are simple
+Now let's suppose we want to add a healthcheck condition, based on the listing of a given list of topics. Our app should be able to reach those topics, this is important e.g. if an ACL policy is in place.
+
+1. We enrich our DSL with an extra term:
+
+```scala
+  case class KafkaErrorCondition(topics: List[Topic])                       extends ErrorCondition
+```
+and we provide with a convenient way to use it within our DSL
+```scala
+  def kafkaErrorCondition(topics: Topic*): ErrorCondition =
+    KafkaErrorCondition(topics.toList)
+```
+
+so we can express an evolution of our error condition:
+
+```scala
+val errorCondition =
+    dbErrorCondition(dbType, TableName("customer"), TableName("access_token")) ||
+      kafkaErrorCondition(kafkaTopic) ||
+      getHttp2xx(Url("http://localhost:8080/status/200"))
+```
+
+The compiler will tell us immediately that we need to adjust our interpreters, to cover all the cases in the pattern matching
+
+```
+[warn] 17 |    errorCondition match
+[warn]    |    ^^^^^^^^^^^^^^
+[warn]    |match may not be exhaustive.
+[warn]    |
+[warn]    |It would fail on pattern case: domainmodeling.healthcheck.ErrorCondition.KafkaErrorCondition(_)
+```
+
+After some pretty obvious small adjustments we have a health check that is considering also the Kafka situation:
+
+```scala
+Either of:
+Database Check (Postgres):
+  Required tables: customer, access_token
+OR
+Kafka Check:
+  Required topics: events
+OR
+HTTP Check:
+  URL: http://localhost:8080/status/200
+```
+
+
+## A more complex example: a rule engine for payment authorization
+
+The health check example was just for us to learn the technique, but this approach shined when we used this approach to power an authorization engine. We manage different countries, and different countries have different rules based on combinations of other factors. Our Product Owner came one day with an initial requirement, and made it clear that the requirements would become more complex with time
 
 
 ### Approachable approach
