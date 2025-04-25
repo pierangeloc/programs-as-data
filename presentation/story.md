@@ -241,7 +241,7 @@ HTTP Check:
   URL: http://localhost:8080/status/200
 ```
 
-## Keeping things aligned as code evolves
+## Keeping documentation aligned with implementation as code evolves
 Now let's suppose we want to add a healthcheck condition, based on the listing of a given list of topics. Our app should be able to reach those topics, this is important e.g. if an ACL policy is in place.
 
 1. We enrich our DSL with an extra term:
@@ -291,10 +291,51 @@ HTTP Check:
 
 ## A more complex example: a rule engine for payment authorization
 
-The health check example was just for us to learn the technique, but this approach shined when we used this approach to power an authorization engine. We manage different countries, and different countries have different rules based on combinations of other factors. Our Product Owner came one day with an initial requirement, and made it clear that the requirements would become more complex with time
+The health check example was just useful to learn the technique, and somehow overstretched for a relatively simple task, but this approach shined when we were tasked to implement an authorization engine. 
+
+The problem: We have a payment system and we need to authorize payments based on different rules.
+
+```scala
+  case class CreditCard(
+    id: Id,
+    cardNumber: CardNumber,
+    cardHolderName: CardHolderName,
+    cardType: CardType,
+    expiryDate: ExpiryDate,
+    issuedInCountry: Country
+  )
+
+  case class Purchase(
+    id: Id,
+    creditCardId: Id,
+    amount: Amount,
+    shop: Shop
+  )
+
+case class Shop(
+    id: ShopId,
+    name: ShopName,
+    country: Country,
+    categories: List[ShopCategory]
+  )
+
+```
+
+We want to implement something like 
+
+```scala
+def isBlocked(creditCard: CreditCard, purchase: Purchase): Boolean
+```
+
+Our Product Owner came one day with an initial requirement, like we want to block all purchases in _France_, but told us that shortly they will come with more complex rules, such as blocking one category of purchases in Country A and another category of purchase in Country B.
+
+So we define a language to cover these evolving requirements
 
 
-### Approachable approach
+## Does this only work for algorithmic problems?
+No, we can model pretty much any problem in this way. For example we could model an ETL processing pipeline by defining a totally generic stream with pipes, maps and sinks. Then we interpret this and make it a ZIO stream, or an FS2 stream, or a mermaid graph that faithfully represents the processing steps.
+
+### Keep things simple and constrained. 
 In designing this solution we didn't require understanding HKT (like tagless final does), nor Free Monads, which share some aspects of our solution. We actually restricted what we can do to a very limited set of operations. We didn't allow introducing generic functions, nor map/flatMap, as this gives us the ability to interpret properly the program we build.
 
 The language properties we are leveraging are very basic, and this approach can be replicated almost seamlessly in any language having a decent support for product/sum types, ideally with some sort of pattern matching. 

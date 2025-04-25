@@ -37,9 +37,9 @@ object BlockingLogicStraight {
    *  5. The plus of an _interpretation_ is that it can be synthesized even by an AI model (not LLM) and deployed, A/B tested etc
    */
   def isBlocked(creditCard: CreditCard, purchase: Purchase): URIO[FraudScoreService, Boolean] =
-    if (creditCard.forbiddenCountries.contains(purchase.shop.country))
+    /*if (creditCard.forbiddenCountries.contains(purchase.shop.country))
       ZIO.succeed(true)
-    else if (purchase.shop.country == Country.UK && purchase.shop.categories.exists(isRiskyCategory))
+    else */if (purchase.shop.country == Country.UK && purchase.shop.categories.exists(isRiskyCategory))
       ZIO.succeed(true)
     else // forbid category Electronics in China
     if (purchase.shop.country == Country.China && purchase.shop.categories.contains(ShopCategory.Electronics))

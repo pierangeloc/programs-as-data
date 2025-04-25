@@ -30,7 +30,12 @@ object AccessRules {
   }
 
   // TODO: move shop in the model with all the rest
-  case class Shop(id: ShopId, name: ShopName, country: Country, categories: List[ShopCategory])
+  case class Shop(
+    id: ShopId,
+    name: ShopName,
+    country: Country,
+    categories: List[ShopCategory]
+  )
 
   trait ShopRepository {
     def getShops(filter: ShopRepository.Filter): UIO[List[Shop]]
@@ -55,11 +60,11 @@ object AccessRules {
         )
 
       private def intersect[A](l: Option[List[A]], r: Option[List[A]]): Option[List[A]] =
-      (l, r) match {
-        case (Some(l), Some(r)) => Some(l.intersect(r))
-        case (None, right)      => right
-        case (left, None)       => left
-      }
+        (l, r) match {
+          case (Some(l), Some(r)) => Some(l.intersect(r))
+          case (None, right)      => right
+          case (left, None)       => left
+        }
 
       // TODO:think further about this one
       def &&(other: Filter): Filter =
