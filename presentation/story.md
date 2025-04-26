@@ -327,9 +327,89 @@ We want to implement something like
 def isBlocked(creditCard: CreditCard, purchase: Purchase): Boolean
 ```
 
-Our Product Owner came one day with an initial requirement, like we want to block all purchases in _France_, but told us that shortly they will come with more complex rules, such as blocking one category of purchases in Country A and another category of purchase in Country B.
+Our Business party (PO) came one day with an initial requirement, like we want to block all electronic purchases in _China_.
 
-So we define a language to cover these evolving requirements
+We could implement this simple rule as:
+
+```scala
+ def isBlocked(creditCard: CreditCard, purchase: Purchase):  Boolean =
+    purchase.shop.country == Country.China && purchase.shop.categories.contains(ShopCategory.Electronics))
+```
+
+but our PO told us that we can expect this rule to become more complex.
+
+So we decide to define a language to cover these evolving requirements. The recipe is the same:     
+
+#### 1. Define the base cases we want to cover as a sealed trait
+
+```scala
+sealed trait BlockingRule
+
+case class PurchaseOccursInCountry(country: Country)                  extends BlockingRule
+case class PurchaseCategoryEquals(purchaseCategory: ShopCategory) extends BlockingRule
+case class PurchaseAmountExceeds(amount: Double)                      extends BlockingRule
+case class FraudProbabilityExceeds(threshold: Probability)            extends BlockingRule
+case class CreditCardFlagged()                                        extends BlockingRule
+case class ShopIsBlacklisted()                                        extends BlockingRule
+```
+#### 2. Equip our data types with combinators to build more complex data types 
+In this case it is sufficient to use recursive data types:
+
+```scala
+sealed trait BlockingRule { self =>
+    def &&(other: BlockingRule): BlockingRule = BlockingRule.And(self, other)
+    def ||(other: BlockingRule): BlockingRule = BlockingRule.Or(self, other)
+}
+```
+
+
+#### 3. Build some constructor to make building these cases more user-friendly
+
+```scala
+object DSL {
+    private def purchaseInCountry(country: Country): BlockingRule           = BlockingRule.PurchaseOccursInCountry(country)
+    def purchaseCountryIsOneOf(countries: Country*): BlockingRule = countries.map(purchaseInCountry).reduce(_ || _)
+    private def purchaseCategoryEquals(purchaseCategory: ShopCategory): BlockingRule =
+      BlockingRule.PurchaseCategoryEquals(purchaseCategory)
+    def purchaseCategoryIsOneOf(purchaseCategories: ShopCategory*): BlockingRule =
+      purchaseCategories.map(purchaseCategoryEquals).reduce(_ || _)
+    def purchaseAmountExceeds(amount: Double): BlockingRule           = BlockingRule.PurchaseAmountExceeds(amount)
+    def fraudProbabilityExceeds(threshold: Probability): BlockingRule = BlockingRule.FraudProbabilityExceeds(threshold)
+    def creditCardFlagged: BlockingRule                               = BlockingRule.CreditCardFlagged()
+    def shopIsBlacklisted: BlockingRule                               = BlockingRule.ShopIsBlacklisted()
+  }
+```
+
+Here we can see how e.g. we implement the exclusion of countries from the list based on the chaining of base cases . 
+
+#### 4. Define interpreters
+
+```scala
+  def isBlocked(rule: BlockingRule, ccFlaggedService: CreditCardFlaggedService, fraudScoreService: FraudScoreService, shopRepository: ShopRepository)(
+      cc: CreditCard, p: Purchase
+  ): UIO[Boolean] = {
+    def eval(rule: BlockingRule): UIO[Boolean] = rule match {
+      case BlockingRule.PurchaseOccursInCountry(country) =>
+        purchaseOccursInCountry(BlockingRule.PurchaseOccursInCountry(country))(input)
+      case BlockingRule.PurchaseCategoryEquals(purchaseCategory) =>
+        purchaseCategoryEquals(BlockingRule.PurchaseCategoryEquals(purchaseCategory))(cc, p)
+      case BlockingRule.PurchaseAmountExceeds(amount) =>
+        purchaseAmountExceeds(BlockingRule.PurchaseAmountExceeds(amount))(input)
+      case BlockingRule.CreditCardFlagged() => creditCardFlagged(ccFlaggedService)(cc, p)
+      case BlockingRule.FraudProbabilityExceeds(threshold) =>
+        fraudProbability(BlockingRule.FraudProbabilityExceeds(threshold), fraudScoreService)(cc, p)
+      case BlockingRule.And(l, r) => eval(l).zipWith(eval(r))(_ && _)
+      case BlockingRule.Or(l, r)  => eval(l).zipWith(eval(r))(_ || _)
+      case BlockingRule.ShopIsBlacklisted() => shopRepository.isBlacklisted(p.shop.id)
+    }
+
+    eval(rule)
+  }
+```
+
+I'll spare you the details of this implementation that you can find one the repository, but once we carefully implemenented these defining cases, we are basically able to cover all possible rules defined through our DSL, and this occurs through the intervention on a single point.
+
+[//]: # (TODO: show how we defined a mermaid interpreter, and show how the implmeented rule evolved during time, showing how complicated the mermaid graph can become)
 
 
 ## Does this only work for algorithmic problems?
