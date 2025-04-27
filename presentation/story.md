@@ -420,9 +420,10 @@ def toMermaidCode(blockingRule: BlockingRule): UIO[String] = // ...
 
 With this in place we can monitor the evolution of our requirements for the blocking rule:
 
+![Rule V1 - Block electronics purchases in China](images/rule_v1.png)
 
-
-
+This visual representation shows our first version of the rule - blocking electronics purchases in China. The graph
+makes it clear how the two conditions (country and purchase category) are combined with an AND operator.
 
 [//]: # (TODO: show how we defined a mermaid interpreter, and show how the implmeented rule evolved during time, showing how complicated the mermaid graph can become)
 
