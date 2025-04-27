@@ -327,7 +327,9 @@ We want to implement something like
 def isBlocked(creditCard: CreditCard, purchase: Purchase): Boolean
 ```
 
-Our Business party (PO) came one day with an initial requirement, like we want to block all electronic purchases in _China_.
+Our Business party (PO) came one day with an initial requirement, like:
+
+> _we want to block all electronic purchases in China_
 
 We could implement this simple rule as:
 
@@ -382,7 +384,7 @@ object DSL {
 
 Here we can see how e.g. we implement the exclusion of countries from the list based on the chaining of base cases . 
 
-#### 4. Define interpreters
+#### 1. Authorization Rule: Business interpreter
 
 ```scala
   def isBlocked(rule: BlockingRule, ccFlaggedService: CreditCardFlaggedService, fraudScoreService: FraudScoreService, shopRepository: ShopRepository)(
@@ -407,7 +409,20 @@ Here we can see how e.g. we implement the exclusion of countries from the list b
   }
 ```
 
-I'll spare you the details of this implementation that you can find one the repository, but once we carefully implemenented these defining cases, we are basically able to cover all possible rules defined through our DSL, and this occurs through the intervention on a single point.
+I'll spare you the details of this implementation that you can find one the repository. However, once we carefully implemented these defining cases, we are basically able to cover all possible rules defined through our DSL, and this occurs only through the intervention on the rule defined through our DSL.
+
+#### 2. Authorization Rule: Mermaid interpreter
+We define also an interpreter that renders the rule as a mermaid graph, so that developers and business people can reason about the applied rules in a visual way, and observe a visual documentation always aligned with the actual code.
+
+```scala
+def toMermaidCode(blockingRule: BlockingRule): UIO[String] = // ...
+```
+
+With this in place we can monitor the evolution of our requirements for the blocking rule:
+
+
+
+
 
 [//]: # (TODO: show how we defined a mermaid interpreter, and show how the implmeented rule evolved during time, showing how complicated the mermaid graph can become)
 

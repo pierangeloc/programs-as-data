@@ -12,7 +12,7 @@ import zio.{UIO, ZIO}
  * and combinators that we can use to express all the possible complicated
  * rules that our business counterparts might require
  */
-object LiveRuleEvaluator {
+object LiveInterpreter {
   case class Input(
                     creditCard: CreditCard,
                     purchase: Purchase
@@ -37,7 +37,7 @@ object LiveRuleEvaluator {
       .getFraudScore(input.creditCard, input.purchase)
       .map(score => score.unwrap > rule.threshold.unwrap)
 
-  def evaluate(rule: BlockingRule, ccFlaggedService: CreditCardFlaggedService, fraudScoreService: FraudScoreService, shopRepository: ShopRepository)(
+  def isBlocked(rule: BlockingRule, ccFlaggedService: CreditCardFlaggedService, fraudScoreService: FraudScoreService, shopRepository: ShopRepository)(
     input: Input
   ): UIO[Boolean] = {
     def eval(rule: BlockingRule): UIO[Boolean] = rule match {

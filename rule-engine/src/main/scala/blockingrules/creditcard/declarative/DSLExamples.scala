@@ -15,6 +15,10 @@ object DSLExamples {
     (purchaseCountryIsOneOf(Country.Netherlands) && purchaseAmountExceeds(500)) ||
     (purchaseCountryIsOneOf(Country.US) && purchaseAmountExceeds(1000) && fraudProbabilityExceeds(Probability(0.8)))
 
+  object Evolution {
+    val br1 = purchaseCountryIsOneOf(Country.China) && purchaseCategoryIsOneOf(ShopCategory.Electronics)
+  }
+
 }
 
 /*

@@ -54,8 +54,6 @@ object MermaidInterpreter {
 
     case class Render(text: String, style: Style = Style.Default)
 
-
-
     given [A](using ra: MermaidRenderable[A]): MermaidRenderable[Labelled[A]] with {
       extension (la: Labelled[A])
         def mermaidRender: MermaidRenderable.Render = {
@@ -68,7 +66,6 @@ object MermaidInterpreter {
 
     }
   }
-
 
   object Instances:
     given MermaidRenderable[BlockingRule] with {
@@ -90,8 +87,8 @@ object MermaidInterpreter {
             MermaidRenderable.Render(Shape.renderLabel(s""""P[Fraud] > ${threshold.unwrap}"""", Shape.RoundedSquare))
           case BlockingRule.CreditCardFlagged() =>
             MermaidRenderable.Render(Shape.renderLabel(s""""CC Flagged"""", Shape.RoundedSquare))
-          case blockingrules.creditcard.declarative.BlockingLogicDeclarative.BlockingRule.
-          ShopIsBlacklisted() => MermaidRenderable.Render(Shape.renderLabel(s""""Shop blacklisted"""", Shape.RoundedSquare))
+          case blockingrules.creditcard.declarative.BlockingLogicDeclarative.BlockingRule.ShopIsBlacklisted() =>
+            MermaidRenderable.Render(Shape.renderLabel(s""""Shop blacklisted"""", Shape.RoundedSquare))
     }
 
   def makeTree(rule: BlockingRule): Tree[BlockingRule] = rule match {
@@ -103,7 +100,7 @@ object MermaidInterpreter {
 
   case class Labelled[A](a: A, label: Int)
 
-  def label(blockingRule: BlockingRule): UIO[Tree[Labelled[BlockingRule]]] = {
+  private def label(blockingRule: BlockingRule): UIO[Tree[Labelled[BlockingRule]]] = {
     val tree = makeTree(blockingRule)
     def canCollapse(br1: BlockingRule, br2: BlockingRule) = (br1, br2) match
       case (BlockingRule.And(_, _), BlockingRule.And(_, _)) => true
@@ -117,25 +114,32 @@ object MermaidInterpreter {
     } yield labelledTree
   }
 
+  def toMermaidCode(blockingRule: BlockingRule): UIO[String] = {
+    import MermaidInterpreter.Instances.given
+    for {
+      labelledTree <- label(blockingRule)
+      mermaidCode  <- labelledToMermaidCode(labelledTree)
+    } yield mermaidCode
+  }
 
-  def toMermaidCode[A: MermaidRenderable](tree: Tree[Labelled[A]]): UIO[String] = {
+  private def labelledToMermaidCode[A: MermaidRenderable](tree: Tree[Labelled[A]]): UIO[String] = {
     import MermaidRenderable.given
 
     for {
       subtrees <- ZIO.succeed(Tree.traverseSubtrees(tree))
       code = subtrees.flatMap { subtree =>
-        subtree.node.mermaidRender.text ::
-          (if (subtree.node.mermaidRender.style != Style.Default)
-            s"style ${subtree.node.label} ${subtree.node.mermaidRender.style.toStyleString}"
-          else "") ::
-          subtree.children.map(child => s"${subtree.node.label} --> ${child.node.label}")
-      }.mkString("\n")
+               subtree.node.mermaidRender.text ::
+                 (if (subtree.node.mermaidRender.style != Style.Default)
+                    s"style ${subtree.node.label} ${subtree.node.mermaidRender.style.toStyleString}"
+                  else "") ::
+                 subtree.children.map(child => s"${subtree.node.label} --> ${child.node.label}")
+             }.mkString("\n")
     } yield s"""flowchart LR
                |${code}""".stripMargin
   }
 
   // this for some reason don't work, probably streams get closed prematurely
-  def mermaidLink(mermaidCode: String): UIO[String] = {
+  def mermaidLinkNotWorking(mermaidCode: String): UIO[String] = {
     val escapedCode   = mermaidCode.replace("\"", "\\\"").replace("\n", "\\n")
     val mermaidGraph  = s"""{"code": "$escapedCode"}", "mermaid": {"theme": "default"} }"""
     val inflatedBytes = mermaidGraph.getBytes(StandardCharsets.UTF_8)
@@ -170,7 +174,7 @@ object MermaidInterpreter {
 
   }
 
-  def mermaidLink2(mermaidCode: String): String = {
+  def mermaidLink(mermaidCode: String): String = {
     val escapedCode  = mermaidCode.replace("\"", "\\\"").replace("\n", "\\n")
     val mermaidGraph = s"""{"code": "$escapedCode", "mermaid": {"theme": "default"} }"""
     println(s"mermaidGraph:\n$mermaidGraph\n")
