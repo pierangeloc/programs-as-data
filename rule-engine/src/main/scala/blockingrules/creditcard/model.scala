@@ -49,7 +49,7 @@ object model {
     type Amount = Amount.Type
 
     enum ShopCategory:
-      case Electronics, Food, Travel, Entertainment, Gambling, Adult, Other
+      case Electronics, Food, Travel, Entertainment, Gambling, Adult
 
     object Latitude extends Newtype[Double]
     type Latitude = Latitude.Type

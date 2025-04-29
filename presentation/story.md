@@ -419,13 +419,38 @@ def toMermaidCode(blockingRule: BlockingRule): UIO[String] = // ...
 ```
 
 With this in place we can monitor the evolution of our requirements for the blocking rule:
+```scala
+val br1 = purchaseCountryIsOneOf(Country.China) && purchaseCategoryIsOneOf(ShopCategory.Electronics)
+```
 
 ![Rule V1 - Block electronics purchases in China](images/rule_v1.png)
 
 This visual representation shows our first version of the rule - blocking electronics purchases in China. The graph
 makes it clear how the two conditions (country and purchase category) are combined with an AND operator.
 
-[//]: # (TODO: show how we defined a mermaid interpreter, and show how the implmeented rule evolved during time, showing how complicated the mermaid graph can become)
+After a while our PO comes with a new requirement, we want to block also gambling transactions in UK
+
+```scala
+    val br2 = br1 || (purchaseCountryIsOneOf(Country.UK) && purchaseCategoryIsOneOf(ShopCategory.Gambling))
+```
+
+![Rule V2 - Add blocking Gambling category in UK](images/rule_v2.png)
+
+The third evolution of our rule will be more complex, and it will combine country, category, amount and a fraud probability threshold 
+
+```scala
+val br3 = br2 || (purchaseCountryIsOneOf(Country.Italy) && purchaseCategoryIsOneOf(
+  ShopCategory.Gambling,
+  ShopCategory.Adult
+) && 
+purchaseAmountExceeds(1000) && 
+fraudProbabilityExceeds(Probability(0.8)))
+```
+
+![Rule V3 - Add blocking Gambling or Adult in Italy with amount and fraud probability](images/rule_v2.png)
+
+Now try to compare this with an equivalent direct implementation. The code will be not only more cumbersome, as it will be more complicated to understand the intention, given we have to look at the _how_ to understand the _what_. It will be also much more _error prone_ and it will lose consistency between the different branches. Why error prone? Because I can introduce arbitrary effects in any of the branches. There is nothing preventing me to replace a call to a real fraud probability service with a random number generation.
+
 
 
 ## Does this only work for algorithmic problems?
