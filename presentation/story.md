@@ -33,22 +33,22 @@ but what about a simple problem like establishing if our system is healthy?
 /**
  * Health check ensures the expected tables are accessible in the DB
  */
-def checkErrors() = 
+def checkErrors() = {
   def dbCheck(dbType: DbType, checkTables: List[TableName]): ZIO[Transactor[Task], Nothing, List[StatusError]] =
     for {
       res <- dbType match
-               case DbType.Postgres =>
-                 DoobieZIOdBHealthcheck.status(DoobieZIOdBHealthcheck.existsPostgres, checkTables)
-               case DbType.MySql =>
-                 DoobieZIOdBHealthcheck.status(DoobieZIOdBHealthcheck.existsMySql, checkTables)
-  
+      case DbType.Postgres =>
+      DoobieZIOdBHealthcheck.status(DoobieZIOdBHealthcheck.existsPostgres, checkTables)
+      case DbType.MySql =>
+      DoobieZIOdBHealthcheck.status(DoobieZIOdBHealthcheck.existsMySql, checkTables)
+
     } yield res
-  
+
   def kafkaCheck(topics: List[Topic]) =
     KafkaHealthCheck.checkTopics(topics).map(_.toList)
-  
+
   def httpCheck(url: Url) = SttpHealthCheck.check(url)
-  
+
   ZIO
     .collectAll(
       List(
@@ -58,6 +58,7 @@ def checkErrors() =
       )
     )
     .map(_.flatten)
+}
 ```
 
 ### Problem nr 1: clarity of intent
@@ -451,7 +452,14 @@ fraudProbabilityExceeds(Probability(0.8)))
 
 Now try to compare this with an equivalent direct implementation. The code will be not only more cumbersome, as it will be more complicated to understand the intention, given we have to look at the _how_ to understand the _what_. It will be also much more _error prone_ and it will lose consistency between the different branches. Why error prone? Because I can introduce arbitrary effects in any of the branches. There is nothing preventing me to replace a call to a real fraud probability service with a random number generation.
 
+Notice that we made our DSL very constrained, we didn't allow injecting arbitrary functions or thunks in it.
 
+Also notice that we didn't encounter the need to add any `map` or `flatMap` or `apply` method to this. This is because we are defining a very high-level language. In case we need something that resembles a map or flatMap, we would also do it only by restricting the 
+
+## Optimizing the rule before executing it
+The fact that we are dealing with a data structure rather than arbitrary functions allows us to manipulate the structure before traversing it for execution. This is what allowed us e.g. to unify the nested `And` into a single `And` before sending it to the mermaid interpreter.
+
+For an execution interpreter we could a
 
 ## Does this only work for algorithmic problems?
 No, we can model pretty much any problem in this way. For example we could model an ETL processing pipeline by defining a totally generic stream with pipes, maps and sinks. Then we interpret this and make it a ZIO stream, or an FS2 stream, or a mermaid graph that faithfully represents the processing steps.
