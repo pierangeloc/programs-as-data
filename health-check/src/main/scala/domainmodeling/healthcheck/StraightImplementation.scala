@@ -48,7 +48,8 @@ object StraightImplementation {
         List(
           dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2"))),
           kafkaCheck(List(Topic("topic1"), Topic("topic2"))),
-          httpCheck(Url("http://localhost:8080"))
+          httpCheck(Url("http://localhost:8080")),
+          ZIO.die(new RuntimeException("Error in the fourth check"))
         )
       )
       .map(_.flatten)

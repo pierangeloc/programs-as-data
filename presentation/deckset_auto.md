@@ -108,17 +108,52 @@ def checkErrors() = {
 
 ---
 
-# Problem #1: Clarity of Intent
+### This code is pure FP
 
-This code technically follows FP principles:
-- No mutability
-- Functional effect systems (ZIO)
 
-But it has readability issues:
-- To understand what it does, we must read all the details
-- The function is unconstrained - we could add any computation
+- Immutable values
+- Strongly typed - `neotype`
+- Pure functional effect system - `ZIO`
+
+---
+
+# Problem #1: No clarity of Intent
+
+- What does this code do?
+- What does it mean to check a list of tables? Their existence? Their non-emptiness? Their read access? Or write access? Or both?
+
+[.code-highlight: 0]
+[.code-highlight: 1-5]
+```scala
+def dbCheck(dbType: DbType, checkTables: List[TableName]): ZIO[Transactor[Task], Nothing, List[StatusError]] = /*...*/
+
+def kafkaCheck(topics: List[Topic]): URIO[AdminClient, Option[StatusError]] = /*...*/
+
+def httpCheck(url: Url): URIO[SttpClient, List[StatusError]]  = /*...*/
+```
 
 ^ Despite following FP rules, this code doesn't communicate its purpose clearly
+
+---
+
+# Problem #1: No clarity of Intent
+
+- Unconstrained functions
+
+[.code-highlight: 1-6,8-10]
+[.code-highlight: 1-10]
+```scala
+ ZIO
+  .collectAll(
+    List(
+      dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2"))),
+      kafkaCheck(List(Topic("topic1"), Topic("topic2"))),
+      httpCheck(Url("http://localhost:8080")),
+      ZIO.die(new RuntimeException("Error in the fourth check"))
+    )
+  )
+  .map(_.flatten)
+```
 
 ---
 
