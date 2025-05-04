@@ -66,8 +66,9 @@ val y = x.map(_ * 2)
 ---
 
 
-#### The Promise of FP: What About Complex Problems?
-A simple health check function:
+#### The Promise of FP in Business Logic Problems
+A simple health check function
+*TODO: Add image*
 
 [.code-highlight: 2,27]
 [.code-highlight: 2-6,27]
@@ -143,7 +144,7 @@ def httpCheck(url: Url): URIO[SttpClient, List[StatusError]]  = /*...*/
 [.code-highlight: 1-6,8-10]
 [.code-highlight: 1-10]
 ```scala
- ZIO
+ def checkErrors() = ZIO
   .collectAll(
     List(
       dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2"))),
@@ -159,6 +160,43 @@ def httpCheck(url: Url): URIO[SttpClient, List[StatusError]]  = /*...*/
 
 # Problem #2: Divergence Between Implementation and Documentation
 
+```scala
+  /**
+   * Check db connectivity
+   * @return
+   */
+  def checkErrors() =
+    dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2")))
+```
+^
+this was the first version of our function, with a proper documentation
+
+---
+
+
+# Problem #2: Divergence Between Implementation and Documentation
+
+[.code-highlight: 1-8,11-14]
+[.code-highlight: 1-9,11-14]
+[.code-highlight: 1-10,11-14]
+```scala
+  /**
+   * Check db connectivity
+   * @return
+   */
+def checkErrors() = ZIO
+  .collectAll(
+    List(
+      dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2"))),
+      kafkaCheck(List(Topic("topic1"), Topic("topic2"))),
+      httpCheck(Url("http://localhost:8080"))
+    )
+  )
+  .map(_.flatten)
+```
+
+^
+Later in time we kept adding functionality, but documentation remained the same
 - Function was initially just checking the DB
 - Later added Kafka check
 - Then added HTTP check
@@ -168,62 +206,110 @@ def httpCheck(url: Url): URIO[SttpClient, List[StatusError]]  = /*...*/
 
 ---
 
-# Problem #3: Solution Bound to Technology
+# Problem #3: Solution Bound to ZIO
 
-- Current solution tightly coupled to ZIO and Doobie
-- Different services with different tech stacks need reimplementation
+- Legacy services use `Future` and Slick
 - No guarantee of equivalence between implementations
+- TODO: Add image here
 
 ^ Changing tech stack means rewriting from scratch with no guarantee of correctness
 
 ---
 
-# Our Goal: Orthogonal Solutions
+# Orthogonality
 
-We want to address all three problems independently:
+### We want to address all three problems independently:
 1. Make intent clear
 2. Keep documentation aligned with code
 3. Make solution technology-agnostic
 
-^ By orthogonal, we mean the solutions should be independent of each other
+^ Orthogonal is a language mutuated from Algebra/Geometry, where in the same way orthogonal vector or spaces don't possibly affect each other, here we mean the solving one problem should not affect the solution of the other ones
 
 ---
 
-# The Approach: Define a Language for Your Problem
+### The Approach: Define a Language that describes the Problem
 
-Start from the problem, not the solution:
-```
-scala sealed trait ErrorCondition
-object ErrorCondition { case class DBErrorCondition(dbType: DbType, checkTables: List[TableName]) extends ErrorCondition case class KafkaErrorCondition(topics: List[Topic]) extends ErrorCondition case class HttpErrorCondition(url: Url) extends ErrorCondition }
+---
+
+# Model the problem, not the solution
+
+```scala 
+sealed trait ErrorCondition
+
+object ErrorCondition { 
+  
+  case class DBErrorCondition(dbType: DbType, checkTables: List[TableName]) extends ErrorCondition 
+  
+  case class KafkaErrorCondition(topics: List[Topic]) extends ErrorCondition 
+  
+  case class HttpErrorCondition(url: Url) extends ErrorCondition 
+}
 ``` 
 
 ^ We use algebraic data types to create a language that describes our problem domain
 
 ---
 
-# Adding Combinators
-```
-scala sealed trait ErrorCondition { self => def ||(other: ErrorCondition): ErrorCondition = Or(self, other) }
-object ErrorCondition { case class Or(left: ErrorCondition, right: ErrorCondition) extends ErrorCondition
-case class DBErrorCondition(dbType: DbType, checkTables: List[TableName]) extends ErrorCondition case class KafkaErrorCondition(topics: List[Topic]) extends ErrorCondition case class HttpErrorCondition(url: Url) extends ErrorCondition }
+# Add Combinators
+
+```scala 
+sealed trait ErrorCondition
+
+object ErrorCondition { 
+  case class Or(left: ErrorCondition, right: ErrorCondition) extends ErrorCondition
+
+  case class DBErrorCondition(dbType: DbType, checkTables: List[TableName]) extends ErrorCondition 
+
+  case class KafkaErrorCondition(topics: List[Topic]) extends ErrorCondition 
+  case class HttpErrorCondition(url: Url) extends ErrorCondition }
 ``` 
 
-^ Now we can combine error conditions using logical operators
+^ Now we can combine error conditions using logical operators. Notice we use an `||` because our system fails if one of the conditions is met
 
 ---
 
-# Using Our Language
+# Build data structures that model our problem
+
+E.g. Error if there is a DB error _or_ an http error
+
+```scala
+Or(DBErrorCondition(DbType.Postgres, List(TableName("user", "access_token"))), HttpErrorCondition(Url("https://license-check.org/check")))
 ```
-scala val errorCondition = dbErrorCondition(dbType, TableName("user"), TableName("access_token")) || getHttp2xx(Url("[https://license-check.org](https://license-check.org)"))
+
+---
+
+# Make it ergonomic
+
+```scala
+sealed trait ErrorCondition { self =>
+  def ||(other: ErrorCondition): ErrorCondition = Or(self, other)
+}
 ``` 
 
-Instead of:
-```
-scala Or( DBErrorCondition( DbType.Postgres, List(TableName(
-latex_unknown_tag
+^ By adding this combinator and some constructors we can make the expression of an error condition much easier and constrained
+
+---
+
+# Make it ergonomic
+
+```scala
+val errorCondition =
+  dbErrorCondition(dbType, TableName("user"), TableName("access_token")) ||
+    getHttp2xx(Url("https://license-check.org"))
+    
 ``` 
 
-^ With helper constructors, we can make our DSL readable and expressive
+---
+
+# Flexibility
+
+```scala
+val errorCondition =
+  dbErrorCondition(dbType, TableName("user"), TableName("access_token")) ||
+    getHttp2xx(Url("https://license-check.org")) ||
+    kafkaErrorCondition("messages-topic")
+    
+``` 
 
 ---
 
