@@ -313,48 +313,126 @@ val errorCondition =
 
 ---
 
-# Interpretation: Making It Runnable
-```
-scala object ZIOInterpreter { def interpret( errorCondition: ErrorCondition ): URIO[Transactor[Task] & SttpClient, List[StatusError]] = errorCondition match case ErrorCondition.DBErrorCondition(DbType.Postgres, checkTables) => DoobieZIOdBHealthcheck.status(DoobieZIOdBHealthcheck.existsPostgres, checkTables) case ErrorCondition.DBErrorCondition(DbType.MySql, checkTables) => DoobieZIOdBHealthcheck.status(DoobieZIOdBHealthcheck.existsMySql, checkTables) case ErrorCondition.HttpErrorCondition(url) => SttpHealthCheck.check(url) case ErrorCondition.Or(left, right) => interpret(left).zipPar(interpret(right)).map { case (leftErrors, rightErrors) => leftErrors ++ rightErrors } }
-latex_unknown_tag
+# Make a `checkErrors()`
+
+Interpret the data structure into a function 
+
+```scala 
+object ZIOInterpreter { 
+  def checkErrors(errorCondition: ErrorCondition) = 
+    
+    errorCondition match
+    
+      case ErrorCondition.DBErrorCondition(DbType.Postgres, checkTables) =>
+        DoobieZIOdBHealthcheck.status(DoobieZIOdBHealthcheck.existsPostgres, checkTables) 
+    
+      case ErrorCondition.DBErrorCondition(DbType.MySql, checkTables) => 
+        DoobieZIOdBHealthcheck.status(DoobieZIOdBHealthcheck.existsMySql, checkTables) 
+    
+      case ErrorCondition.HttpErrorCondition(url) => 
+        SttpHealthCheck.check(url)
+    
+      case ErrorCondition.Or(left, right) => 
+        interpret(left).zipPar(interpret(right)).map { 
+          case (leftErrors, rightErrors) => leftErrors ++ rightErrors 
+        } 
+}
 ``` 
 
-^ The compiler will help us ensure we've covered all cases
+^
+Once we have the data structure definition in place, we need to make this runnable, and this is what goes by as _interpretation_. Interpretation is completely free: we have no constraints coming from our DLS about what we need to do with the data structure we built.
+So if we use ZIO and Doobie, the interpreter that, given our health check definition returns the list of status errors, if any
+Note that The compiler will help us ensure we've covered all cases.
 
 ---
 
+# Interpreter: the bare minimum
+
+```scala
+sealed trait ErrorCondition
+
+def checkErrors(ec: ErrorCondition): UIO[List[Errors]] =
+  ec match {
+    //cover all cases
+  }
+  
+```
+
+---
+
+# Interpreter: optimize before running
+
+```scala
+sealed trait ErrorCondition
+
+private def optimize(ec: ErrorCondition): Algebra = ???
+
+def checkErrors(ec: ErrorCondition): UIO[List[Errors]] =
+  optimize(ec) match {
+    //cover all cases
+  }
+  
+```
+
+^
+one possible optimization in our case would be to traverse the data structure, collect all the conditions of the same type in a monoidal way and run just one call to the targeted platform 
+
+---
 # Benefits: Clarity of Intent
 
-Our DSL is now clearly conveying what we want to do:
-```
-scala val errorCondition = dbErrorCondition(dbType, TableName("user"), TableName("access_token")) || getHttp2xx(Url("[https://license-check.org](https://license-check.org)"))
+
+```scala 
+val errorCondition =
+  dbErrorCondition(dbType, TableName("user"), TableName("access_token")) ||
+    getHttp2xx(Url("https://license-check.org")) ||
+    kafkaErrorCondition("messages-topic")
+
 ``` 
 
-^ This reads almost like natural language, making the intent clear
+TODO: Make it even better with some constructors such as `checkDb(type).tablesExist(tables...)`
+
+^ This reads almost like natural language, making the intent clear. Our DSL is now clearly conveying what we want to do:
 
 ---
 
 # Benefits: Technology Independence
 
 For a Future/Slick implementation:
-```
-scala def interpret( db: slick.jdbc.JdbcBackend#Database, jdbcProfile: slick.jdbc.JdbcProfile, httpClient: SttpFutureBackend[Future, Any] )( errorCondition: ErrorCondition )(implicit ec: ExecutionContext): Future[List[StatusError]] = { // Different implementation, same logic }
-latex_unknown_tag
-latex_unknown_tag
+
+```scala 
+  def checkErrors(
+    db: slick.jdbc.JdbcBackend#Database, 
+    jdbcProfile: slick.jdbc.JdbcProfile, 
+    httpClient: SttpFutureBackend[Future, Any]
+  )(
+    errorCondition: ErrorCondition )(implicit ec: ExecutionContext): Future[List[StatusError]] = { 
+      // Different implementation, same logic 
+    }
 ``` 
 
 ^ We can create different interpreters for different tech stacks
 
 ---
 
-# Benefits: Documentation as Code
-```
-scala def interpret(errorCondition: ErrorCondition): String = //...
+# Benefits: Documentation from Code
+
+```scala 
+def interpret(errorCondition: ErrorCondition): String = ...
 ``` 
 
 Output:
+
 ```
-Either of: Database Check (Postgres): Required tables: customer, access_token OR HTTP Check: URL: [http://localhost:8080/status/200](http://localhost:8080/status/200)
+Either of:
+Database Check (Postgres):
+  Required tables: customer, access_token
+OR
+Kafka Check:
+  Required topics: events
+OR
+HTTP Check:
+  URL: http://localhost:8080/status/200
+are detected for failure
 ``` 
 
 ^ Generate documentation directly from the code structure
@@ -363,10 +441,11 @@ Either of: Database Check (Postgres): Required tables: customer, access_token OR
 
 # Evolution of the Language
 
-When requirements change, we expand our language:
-```
-scala case class KafkaErrorCondition(topics: List[Topic]) extends ErrorCondition
-def kafkaErrorCondition(topics: Topic*): ErrorCondition = KafkaErrorCondition(topics.toList)
+New requirement? -> New term in the algebra
+
+```scala 
+case class RabbitMQErrorCondition(exchanges: List[Exchange]) extends ErrorCondition
+def rabbitMQErrorCondition(topics: Exchange*): ErrorCondition = RabbitMQErrorCondition(topics.toList)
 ``` 
 
 ^ The language evolves as our requirements evolve
@@ -375,7 +454,11 @@ def kafkaErrorCondition(topics: Topic*): ErrorCondition = KafkaErrorCondition(to
 
 # Compiler-Enforced Consistency
 ```
-[warn] 17 | errorCondition match [warn] | ^^^^^^^^^^^^^^ [warn] |match may not be exhaustive. [warn] | [warn] |It would fail on pattern case: ErrorCondition.KafkaErrorCondition(_)
+[warn] 17 |    errorCondition match
+[warn]    |    ^^^^^^^^^^^^^^
+[warn]    |match may not be exhaustive.
+[warn]    |
+[warn]    |It would fail on pattern case: domainmodeling.healthcheck.ErrorCondition.RabbitMQErrorCondition(_)
 ``` 
 
 ^ The compiler tells us when our interpreters need updating
@@ -395,79 +478,142 @@ scala def isBlocked(creditCard: CreditCard, purchase: Purchase): Boolean
 ---
 
 # Domain Model
-```
-scala case class CreditCard( id: Id, cardNumber: CardNumber, cardHolderName: CardHolderName, cardType: CardType, expiryDate: ExpiryDate, issuedInCountry: Country )
-case class Purchase( id: Id, creditCardId: Id, amount: Amount, shop: Shop )
-case class Shop( id: ShopId, name: ShopName, country: Country, categories: List[ShopCategory] )
-latex_unknown_tag
-latex_unknown_tag
-latex_unknown_tag
+```scala 
+ case class CreditCard(
+  id: Id,
+  cardNumber: CardNumber,
+  cardHolderName: CardHolderName,
+  cardType: CardType,
+  expiryDate: ExpiryDate,
+  issuedInCountry: Country
+)
+
+case class Purchase(
+  id: Id,
+  creditCardId: Id,
+  amount: Amount,
+  shop: Shop
+)
+
+case class Shop(
+  id: ShopId,
+  name: ShopName,
+  country: Country,
+  categories: List[ShopCategory]
+)
 ``` 
 
 ^ Our domain contains credit cards, purchases, and shops
 
 ---
 
+# Payment Approval system
+
+```scala
+def isBlocked(creditCard: CreditCard, purchase: Purchase): Boolean
+```
+
+---
+
 # First Requirement
 
-> _"We want to block all electronic purchases in China"_
+> _"Block all electronic purchases in China"_
 
 Naive implementation:
+
+```scala
+ def isBlocked(creditCard: CreditCard, purchase: Purchase):  Boolean =
+  purchase.shop.country == Country.China && purchase.shop.categories.contains(ShopCategory.Electronics))
 ```
-scala def isBlocked(creditCard: CreditCard, purchase: Purchase): Boolean = purchase.shop.country == Country.China && purchase.shop.categories.contains(ShopCategory.Electronics)
-``` 
 
 ^ But our PO told us that this rule would become more complex over time
 
 ---
 
-# Building a Rule Language
+# Building the basic rules
+
+```scala
+sealed trait BlockingRule
+
+case class PurchaseOccursInCountry(country: Country)                  extends BlockingRule
+case class PurchaseCategoryEquals(purchaseCategory: ShopCategory) extends BlockingRule
+case class PurchaseAmountExceeds(amount: Double)                      extends BlockingRule
+case class FraudProbabilityExceeds(threshold: Probability)            extends BlockingRule
+case class CreditCardFlagged()                                        extends BlockingRule
+case class ShopIsBlacklisted()                                        extends BlockingRule
 ```
-scala sealed trait BlockingRule
-case class PurchaseOccursInCountry(country: Country) extends BlockingRule case class PurchaseCategoryEquals(purchaseCategory: ShopCategory) extends BlockingRule case class PurchaseAmountExceeds(amount: Double) extends BlockingRule case class FraudProbabilityExceeds(threshold: Probability) extends BlockingRule case class CreditCardFlagged() extends BlockingRule case class ShopIsBlacklisted() extends BlockingRule
-``` 
 
 ^ We define the base cases for our blocking rules
 
 ---
 
 # Adding Combinators
+
+```scala
+sealed trait BlockingRule { self =>
+    def &&(other: BlockingRule): BlockingRule = BlockingRule.And(self, other)
+    def ||(other: BlockingRule): BlockingRule = BlockingRule.Or(self, other)
+}
 ```
-scala sealed trait BlockingRule { self => def &&(other: BlockingRule): BlockingRule = BlockingRule.And(self, other) def ||(other: BlockingRule): BlockingRule = BlockingRule.Or(self, other) }
-``` 
 
 ^ We add logical operators to combine rules
 
 ---
 
 # User-Friendly Constructors
+
+```scala
+object DSL {
+    private def purchaseInCountry(country: Country): BlockingRule           = BlockingRule.PurchaseOccursInCountry(country)
+    def purchaseCountryIsOneOf(countries: Country*): BlockingRule = countries.map(purchaseInCountry).reduce(_ || _)
+    private def purchaseCategoryEquals(purchaseCategory: ShopCategory): BlockingRule =
+      BlockingRule.PurchaseCategoryEquals(purchaseCategory)
+    def purchaseCategoryIsOneOf(purchaseCategories: ShopCategory*): BlockingRule =
+      purchaseCategories.map(purchaseCategoryEquals).reduce(_ || _)
+    def purchaseAmountExceeds(amount: Double): BlockingRule           = BlockingRule.PurchaseAmountExceeds(amount)
+    def fraudProbabilityExceeds(threshold: Probability): BlockingRule = BlockingRule.FraudProbabilityExceeds(threshold)
+    def creditCardFlagged: BlockingRule                               = BlockingRule.CreditCardFlagged()
+    def shopIsBlacklisted: BlockingRule                               = BlockingRule.ShopIsBlacklisted()
+  }
 ```
-scala object DSL { def purchaseCountryIsOneOf(countries: Country*): BlockingRule = countries.map(purchaseInCountry).reduce(_ || _)
-def purchaseCategoryIsOneOf(purchaseCategories: ShopCategory*): BlockingRule = purchaseCategories.map(purchaseCategoryEquals).reduce(_ || _)
-def purchaseAmountExceeds(amount: Double): BlockingRule = BlockingRule.PurchaseAmountExceeds(amount)
-def fraudProbabilityExceeds(threshold: Probability): BlockingRule = BlockingRule.FraudProbabilityExceeds(threshold)
-// More constructors... }
-``` 
 
 ^ Helper methods make our DSL read naturally
 
 ---
 
 # Rule Interpreter
+
+```scala
+  def isBlocked(rule: BlockingRule, ccFlaggedService: CreditCardFlaggedService, fraudScoreService: FraudScoreService, shopRepository: ShopRepository)(
+      cc: CreditCard, p: Purchase
+  ): UIO[Boolean] = {
+    def eval(rule: BlockingRule): UIO[Boolean] = rule match {
+      case BlockingRule.PurchaseOccursInCountry(country) =>
+        purchaseOccursInCountry(BlockingRule.PurchaseOccursInCountry(country))(input)
+      case BlockingRule.PurchaseCategoryEquals(purchaseCategory) =>
+        purchaseCategoryEquals(BlockingRule.PurchaseCategoryEquals(purchaseCategory))(cc, p)
+      case BlockingRule.PurchaseAmountExceeds(amount) =>
+        purchaseAmountExceeds(BlockingRule.PurchaseAmountExceeds(amount))(input)
+      case BlockingRule.CreditCardFlagged() => creditCardFlagged(ccFlaggedService)(cc, p)
+      case BlockingRule.FraudProbabilityExceeds(threshold) =>
+        fraudProbability(BlockingRule.FraudProbabilityExceeds(threshold), fraudScoreService)(cc, p)
+      case BlockingRule.And(l, r) => eval(l).zipWith(eval(r))(_ && _)
+      case BlockingRule.Or(l, r)  => eval(l).zipWith(eval(r))(_ || _)
+      case BlockingRule.ShopIsBlacklisted() => shopRepository.isBlacklisted(p.shop.id)
+    }
+
+    eval(rule)
+  }
 ```
-scala def isBlocked( rule: BlockingRule, ccFlaggedService: CreditCardFlaggedService, fraudScoreService: FraudScoreService, shopRepository: ShopRepository )( cc: CreditCard, p: Purchase ): UIO[Boolean] = { def eval(rule: BlockingRule): UIO[Boolean] = rule match { case PurchaseOccursInCountry(country) => // Evaluate case PurchaseCategoryEquals(purchaseCategory) => // Evaluate case PurchaseAmountExceeds(amount) => // Evaluate case And(l, r) => eval(l).zipWith(eval(r))(_ && ) case Or(l, r) => eval(l).zipWith(eval(r))( || _) // Other cases... }
-eval(rule) }
-latex_unknown_tag
-latex_unknown_tag
-latex_unknown_tag
-latex_unknown_tag
-``` 
 
 ^ Our interpreter evaluates the rule against actual services
 
 ---
 
-# Visual Representation
+# Documentation from code: Mermaid
+
+In such a  case a graph is better than a long Confluence page
+
 ```
 scala def toMermaidCode(blockingRule: BlockingRule): UIO[String] = // ...
 ``` 
@@ -477,36 +623,40 @@ scala def toMermaidCode(blockingRule: BlockingRule): UIO[String] = // ...
 ---
 
 # Rule Evolution: V1
+
+```scala
+val br1 = purchaseCountryIsOneOf(Country.China) && purchaseCategoryIsOneOf(ShopCategory.Electronics)
 ```
-scala val br1 = purchaseCountryIsOneOf(Country.China) && purchaseCategoryIsOneOf(ShopCategory.Electronics)
-``` 
 
 ![inline](images/rule_v1.png)
 
 ^ Our first rule blocks electronics purchases in China
-
+After a while our PO comes with a new requirement, we want to block also gambling transactions in UK
 ---
 
 # Rule Evolution: V2
 
 ```scala
-val br2 = br1 || (
-  purchaseCountryIsOneOf(Country.UK) && 
-  purchaseCategoryIsOneOf(ShopCategory.Gambling)
-)
+    val br2 = br1 || (purchaseCountryIsOneOf(Country.UK) && purchaseCategoryIsOneOf(ShopCategory.Gambling))
 ```
-```
+
 ^ Now we also block gambling purchases in UK
+he third evolution of our rule will be more complex, and it will combine country, category, amount and a fraud probability threshold
+
 # Rule Evolution: V3
-``` scala
-val br3 = br2 || (
-  purchaseCountryIsOneOf(Country.Italy) && 
-  purchaseCategoryIsOneOf(ShopCategory.Gambling, ShopCategory.Adult) && 
-  purchaseAmountExceeds(1000) && 
-  fraudProbabilityExceeds(Probability(0.8))
-)
+
+```scala
+val br3 = br2 || (purchaseCountryIsOneOf(Country.Italy) && purchaseCategoryIsOneOf(
+  ShopCategory.Gambling,
+  ShopCategory.Adult
+) && 
+purchaseAmountExceeds(1000) && 
+fraudProbabilityExceeds(Probability(0.8)))
 ```
+
 ^ Our third version adds complex rules for Italy
+
+
 # Benefits of This Approach
 1. **Clear Intent**: Rules express what we want, not how to calculate it
 2. **Self-Documenting**: Visual representation directly from code

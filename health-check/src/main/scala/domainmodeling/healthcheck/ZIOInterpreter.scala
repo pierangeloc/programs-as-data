@@ -11,12 +11,12 @@ import zio.*
 import zio.kafka.admin.AdminClient
 
 object ZIOInterpreter {
-  def interpret(
+  def checkErrors(
     errorCondition: ErrorCondition
   ): URIO[Transactor[Task] & zio.kafka.admin.AdminClient & SttpClient, List[StatusError]] =
     errorCondition match
       case ErrorCondition.Or(left, right) =>
-        interpret(left).zipPar(interpret(right)).map { case (leftErrors, rightErrors) => leftErrors ++ rightErrors }
+        checkErrors(left).zipPar(checkErrors(right)).map { case (leftErrors, rightErrors) => leftErrors ++ rightErrors }
       case ErrorCondition.DBErrorCondition(DbType.Postgres, checkTables) =>
         DoobieZIOdBHealthcheck.status(DoobieZIOdBHealthcheck.existsPostgres, checkTables)
 
