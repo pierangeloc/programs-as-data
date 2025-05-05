@@ -424,7 +424,7 @@ With this in place we can monitor the evolution of our requirements for the bloc
 val br1 = purchaseCountryIsOneOf(Country.China) && purchaseCategoryIsOneOf(ShopCategory.Electronics)
 ```
 
-![Rule V1 - Block electronics purchases in China](images/rule_v1.png)
+![Rule V1 - Block electronics purchases in China](images/rule_v1_.png)
 
 This visual representation shows our first version of the rule - blocking electronics purchases in China. The graph
 makes it clear how the two conditions (country and purchase category) are combined with an AND operator.

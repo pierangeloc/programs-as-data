@@ -625,69 +625,113 @@ scala def toMermaidCode(blockingRule: BlockingRule): UIO[String] = // ...
 # Rule Evolution: V1
 
 ```scala
-val br1 = purchaseCountryIsOneOf(Country.China) && purchaseCategoryIsOneOf(ShopCategory.Electronics)
+val br1 = 
+  purchaseCountryIsOneOf(Country.China) && 
+    purchaseCategoryIsOneOf(ShopCategory.Electronics)
 ```
 
-![inline](images/rule_v1.png)
+![right fit](images/rule_v1.png)
 
 ^ Our first rule blocks electronics purchases in China
 After a while our PO comes with a new requirement, we want to block also gambling transactions in UK
+
 ---
 
 # Rule Evolution: V2
 
 ```scala
-    val br2 = br1 || (purchaseCountryIsOneOf(Country.UK) && purchaseCategoryIsOneOf(ShopCategory.Gambling))
+val br1 =
+  purchaseCountryIsOneOf(Country.China) &&
+    purchaseCategoryIsOneOf(ShopCategory.Electronics)
+    
+val br2 = br1 || 
+  (purchaseCountryIsOneOf(Country.UK) && 
+    purchaseCategoryIsOneOf(ShopCategory.Gambling))
 ```
+
+![right fit](images/rule_v2.png)
 
 ^ Now we also block gambling purchases in UK
 he third evolution of our rule will be more complex, and it will combine country, category, amount and a fraud probability threshold
 
+---
+
 # Rule Evolution: V3
 
 ```scala
-val br3 = br2 || (purchaseCountryIsOneOf(Country.Italy) && purchaseCategoryIsOneOf(
-  ShopCategory.Gambling,
-  ShopCategory.Adult
-) && 
-purchaseAmountExceeds(1000) && 
-fraudProbabilityExceeds(Probability(0.8)))
+val br1 =
+  purchaseCountryIsOneOf(Country.China) &&
+    purchaseCategoryIsOneOf(ShopCategory.Electronics)
+
+val br2 = br1 ||
+  (purchaseCountryIsOneOf(Country.UK) &&
+    purchaseCategoryIsOneOf(ShopCategory.Gambling))
+
+val br3 = br2 || 
+  (
+    purchaseCountryIsOneOf(Country.Italy) &&
+      purchaseCategoryIsOneOf(
+        ShopCategory.Gambling,
+        ShopCategory.Adult
+      ) && 
+      purchaseAmountExceeds(1000) && 
+      fraudProbabilityExceeds(Probability(0.8))
+  )
 ```
+![right fit](images/rule_v3.png)
+
 
 ^ Our third version adds complex rules for Italy
 
+---
 
-# Benefits of This Approach
-1. **Clear Intent**: Rules express what we want, not how to calculate it
-2. **Self-Documenting**: Visual representation directly from code
-3. **Technology Independent**: Same rules, different implementations
-4. **Evolving Safely**: Compiler catches missing interpreter cases
-5. **Optimization**: We can transform the rule tree before execution
+# Benefits
+- **Clear Intent**: Rules express what we want, not how to calculate it
+- **Self-Documenting**: Visual representation directly from code
+- **Technology Independent**: Same rules, different implementations
+- **Evolving Safely**: Compiler catches missing cases
+- **Optimization**: We can transform the rule tree before execution
 
 ^ These are the key advantages of treating programs as values
-# Not Just for Algorithmic Problems
-Can model almost any domain:
+
+---
+
+# ...and there is more!
+Not only algorithmic problems:
+
 - ETL processing pipelines
-- Authorization rules
 - Workflows
-- API requests
+- Authorization rules
+- API requests _(Tapir, ZIO-http)_
 - Domain-specific calculations
 
 ^ This approach works for many different problem domains
+
+---
+
+# Scala featues shine...
+- Compiler exhaustive checks
+- Phantom types to make unwanted constructions impossible
+
+---
+
+# ...but all you need is data
+- Languages with good sum and product types
+- Pattern matching (data de-construction)
+- And capability to add methods to types
+ 
+---
+
 # Keep Things Simple
 - No need for higher-kinded types (HKTs)
-- No need for Free Monads
 - Restrict operations to a limited set
 - Avoid arbitrary functions or map/flatMap
+- (Free) monads are necessary at low level
 
 ^ Simplicity is a feature, not a limitation
-# Summary
-1. Define your problem domain as data structures
-2. Add combinators to create complex expressions
-3. Create user-friendly constructors
-4. Write multiple interpreters for different needs
-5. Let the compiler help you maintain consistency
 
-^ Programs as values let you separate what from how
-# Thank You!
+---
+
+#Thank You!
+
 Questions?
