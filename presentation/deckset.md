@@ -76,14 +76,14 @@ To make things even more complicated, none of these situation results in error i
 [.code-highlight: 1-10]
 
 ```scala 
-// Procedural approach 
+// HOW (Procedural)
 val x = List(1, 2, 3) 
 val y = scala.collection.mutable.ArrayBuffer.empty[Int]
 for (i <- 0 until x.size) {
   y += x(i) * 2
 }
 
-// Functional approach 
+// WHAT (Functional)
 val x = List(1, 2, 3)
 val y = x.map(_ * 2)
 ``` 
@@ -92,19 +92,18 @@ val y = x.map(_ * 2)
 
 ---
 
-
 #### The Promise of FP in Business Logic Problems
-A simple health check function
+Health Check
 
 
 ![right fit](images/healthcheck.png)
 
-[.code-highlight: 1,33]
-[.code-highlight: 1-8,33]
-[.code-highlight: 1-15,33]
-[.code-highlight: 1-22,33]
-[.code-highlight: 1,3-33]
+[.code-highlight: 1-4,36]
+[.code-highlight: 1-12,36]
 ```scala 
+/**
+ * Check db connectivity
+ */
 def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, List[StatusError]] = {
   def dbCheck(
     dbType: DbType, 
@@ -143,9 +142,264 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
 ^ Here is a straightforward implementation for the healthcheck, One function checks the DB, one checks the kafka connection, and one checks the external http connection.
 At the end, we collect the error messages produced by each of them into  a single list
 
+
 ---
 
-### This code is pure FP
+#### The Promise of FP in Business Logic Problems
+Health Check
+
+
+![right fit](images/healthcheck.png)
+
+```scala 
+  def dbCheck(
+    dbType: DbType, 
+    checkTables: List[TableName]
+  ): ZIO[Transactor[Task], Nothing, List[StatusError]] =
+    /*
+     * Doobie code    
+     */
+``` 
+
+---
+
+#### The Promise of FP in Business Logic Problems
+Health Check
+
+
+![right fit](images/healthcheck.png)
+
+
+[.code-highlight: 1,10-15,33]
+```scala 
+def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, List[StatusError]] = {
+  def dbCheck(
+    dbType: DbType, 
+    checkTables: List[TableName]
+  ): ZIO[Transactor[Task], Nothing, List[StatusError]] =
+    /*
+     * Doobie code    
+     */
+
+  def kafkaCheck(
+    topics: List[Topic]
+  ): URIO[AdminClient, Option[StatusError]] =
+    /*
+     * ZIO-kafka code
+     */
+
+  def httpCheck(
+    url: Url
+  ): URIO[SttpClient, List[StatusError]] =
+    /*
+     * Sttp code  
+     */
+
+  ZIO
+    .collectAll(
+      List(
+        dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2"))),
+        kafkaCheck(List(Topic("topic1"), Topic("topic2"))),
+        httpCheck(Url("http://localhost:8080"))
+      )
+    )
+    .map(_.flatten)
+}
+``` 
+
+---
+
+#### The Promise of FP in Business Logic Problems
+Health Check
+
+
+![right fit](images/healthcheck.png)
+
+```scala 
+
+  def kafkaCheck(
+    topics: List[Topic]
+  ): URIO[AdminClient, Option[StatusError]] =
+    /*
+     * ZIO-kafka code
+     */
+```
+
+---
+
+#### The Promise of FP in Business Logic Problems
+Health Check
+
+
+![right fit](images/healthcheck.png)
+
+[.code-highlight: 1,16-22,33]
+```scala 
+def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, List[StatusError]] = {
+  def dbCheck(
+    dbType: DbType, 
+    checkTables: List[TableName]
+  ): ZIO[Transactor[Task], Nothing, List[StatusError]] =
+    /*
+     * Doobie code    
+     */
+
+  def kafkaCheck(
+    topics: List[Topic]
+  ): URIO[AdminClient, Option[StatusError]] =
+    /*
+     * ZIO-kafka code
+     */
+
+  def httpCheck(
+    url: Url
+  ): URIO[SttpClient, List[StatusError]] =
+    /*
+     * Sttp code  
+     */
+
+  ZIO
+    .collectAll(
+      List(
+        dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2"))),
+        kafkaCheck(List(Topic("topic1"), Topic("topic2"))),
+        httpCheck(Url("http://localhost:8080"))
+      )
+    )
+    .map(_.flatten)
+}
+``` 
+
+---
+
+#### The Promise of FP in Business Logic Problems
+Health Check
+
+
+![right fit](images/healthcheck.png)
+
+```scala
+
+  def httpCheck(
+    url: Url
+  ): URIO[SttpClient, List[StatusError]] =
+    /*
+     * Sttp code  
+     */
+}
+``` 
+
+---
+
+#### The Promise of FP in Business Logic Problems
+Health Check
+
+
+![right fit](images/healthcheck.png)
+
+[.code-highlight: 1,23-32,33]
+```scala 
+def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, List[StatusError]] = {
+  def dbCheck(
+    dbType: DbType, 
+    checkTables: List[TableName]
+  ): ZIO[Transactor[Task], Nothing, List[StatusError]] =
+    /*
+     * Doobie code    
+     */
+
+  def kafkaCheck(
+    topics: List[Topic]
+  ): URIO[AdminClient, Option[StatusError]] =
+    /*
+     * ZIO-kafka code
+     */
+
+  def httpCheck(
+    url: Url
+  ): URIO[SttpClient, List[StatusError]] =
+    /*
+     * Sttp code  
+     */
+
+  ZIO
+    .collectAll(
+      List(
+        dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2"))),
+        kafkaCheck(List(Topic("topic1"), Topic("topic2"))),
+        httpCheck(Url("http://localhost:8080"))
+      )
+    )
+    .map(_.flatten)
+}
+``` 
+
+---
+
+#### The Promise of FP in Business Logic Problems
+Health Check
+
+![right fit](images/healthcheck.png)
+
+```scala 
+  ZIO
+    .collectAll(
+      List(
+        dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2"))),
+        kafkaCheck(List(Topic("topic1"), Topic("topic2"))),
+        httpCheck(Url("http://localhost:8080"))
+      )
+    )
+    .map(_.flatten)
+``` 
+
+---
+
+#### The Promise of FP in Business Logic Problems
+Health Check
+
+
+![right fit](images/healthcheck.png)
+
+```scala 
+def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, List[StatusError]] = {
+  def dbCheck(
+    dbType: DbType, 
+    checkTables: List[TableName]
+  ): ZIO[Transactor[Task], Nothing, List[StatusError]] =
+    /*
+     * Doobie code    
+     */
+
+  def kafkaCheck(
+    topics: List[Topic]
+  ): URIO[AdminClient, Option[StatusError]] =
+    /*
+     * ZIO-kafka code
+     */
+
+  def httpCheck(
+    url: Url
+  ): URIO[SttpClient, List[StatusError]] =
+    /*
+     * Sttp code  
+     */
+
+  ZIO
+    .collectAll(
+      List(
+        dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2"))),
+        kafkaCheck(List(Topic("topic1"), Topic("topic2"))),
+        httpCheck(Url("http://localhost:8080"))
+      )
+    )
+    .map(_.flatten)
+}
+```
+
+---
+
+### Purely functional code
 
 - Immutable values
 - Strongly typed - `neotype`
@@ -156,19 +410,16 @@ At the end, we collect the error messages produced by each of them into  a singl
 
 ---
 
-### This code is pure FP
+### Purely functional code
 
 Is it focused on the _how_ or on the _what_?
 
 ^
-This code is Purely functional, but is it really focused on the what rather than the how?
+This code is Purely functional, but is it really focused on the what rather than the how? I think this suffers from some limitations
 
 ---
 
 # Problem #1: No clarity of Intent
-
-- What does this code do?
-- What does it mean to check a list of tables? Their existence? Their non-emptiness? Their read access? Or write access? Or both?
 
 [.code-highlight: 0]
 [.code-highlight: 1-5]
@@ -180,16 +431,20 @@ def kafkaCheck(topics: List[Topic]): URIO[AdminClient, Option[StatusError]] = /*
 def httpCheck(url: Url): URIO[SttpClient, List[StatusError]]  = /*...*/
 ```
 
-^ Despite following FP rules, this code doesn't communicate its purpose clearly
+^ What does this code do?
+^ What does it mean to check a list of tables? Their existence? Their non-emptiness? Their read access? Or write access? Or both?
+^ What does doing an http check mean? getting a 200 code back? Or just checking the connection?
 
 ---
 
 # Problem #1: No clarity of Intent
 
-- Unconstrained functions
+Unconstrained functions
 
 [.code-highlight: 1-6,9-11]
-[.code-highlight: 1-11]
+[.code-highlight: 1-7,9-11]
+[.code-highlight: 1-8,9-11]
+[.code-highlight: 1-13,9-11]
 
 ```scala
  def checkErrors() = ZIO
@@ -199,21 +454,22 @@ def httpCheck(url: Url): URIO[SttpClient, List[StatusError]]  = /*...*/
       kafkaCheck(List(Topic("topic1"), Topic("topic2"))),
       httpCheck(Url("http://localhost:8080")),
       ZIO.succeed(List(StatusError("Random error")))
-      ZIO.die(new RuntimeException("Error in the fourth check"))
+      ZIO.die(new RuntimeException("Error in the fifth check"))
     )
   )
   .map(_.flatten)
 ```
+
+^On top of that, we are using unconstrained functions. Nothing prevents us from putting there one constant error (CLICK), or even letting the whole computation blow up at runtime(CLICK)
 
 ---
 
 # Problem #2: Divergence Between Implementation and Documentation
 
 ```scala
-  /**
-   * Check db connectivity
-   * @return
-   */
+/**
+ * Check db connectivity
+ */
   def checkErrors() =
     dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2")))
 ```
@@ -228,10 +484,9 @@ def httpCheck(url: Url): URIO[SttpClient, List[StatusError]]  = /*...*/
 [.code-highlight: 1-9,11-14]
 [.code-highlight: 1-10,11-14]
 ```scala
-  /**
-   * Check db connectivity
-   * @return
-   */
+/**
+ * Check db connectivity
+ */
 def checkErrors() = ZIO
   .collectAll(
     List(
@@ -258,7 +513,6 @@ Later in time we kept adding functionality, but documentation remained the same
 
 - Legacy services use `Future` and Slick
 - No guarantee of equivalence between implementations
-- TODO: Add image here
 
 ^ Changing tech stack means rewriting from scratch with no guarantee of correctness
 
@@ -266,20 +520,21 @@ Later in time we kept adding functionality, but documentation remained the same
 
 # Orthogonality
 
-### We want to address all three problems independently:
+### Address all three problems independently:
 1. Make intent clear
-2. Keep documentation aligned with code
-3. Make solution technology-agnostic
+2. Keep documentation _always_ aligned with code
+3. Make solution stack-agnostic
 
 ^ Orthogonal is a language mutuated from Algebra/Geometry, where in the same way orthogonal vector or spaces don't possibly affect each other, here we mean the solving one problem should not affect the solution of the other ones
 
 ---
 
-### The Approach: Define a Language that describes the Problem
+### Define a Language that describes the Problem
 
+^The solution is: Start with a language that accurately describes the problem
 ---
 
-# Model the problem, not the solution
+# Model the problem - not the solution
 
 ```scala 
 sealed trait ErrorCondition
