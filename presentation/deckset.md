@@ -3,6 +3,7 @@ slidenumbers: false
 build-lists: true
 list: alignment(left)
 footer: Pierangelo Cecchetto - LambdaConf 2025
+theme: Poster, 2
 
 
 # Programs as Values
@@ -419,27 +420,7 @@ This code is Purely functional, but is it really focused on the what rather than
 
 ---
 
-# Problem #1: No clarity of Intent
-
-[.code-highlight: 0]
-[.code-highlight: 1-5]
-```scala
-def dbCheck(dbType: DbType, checkTables: List[TableName]): ZIO[Transactor[Task], Nothing, List[StatusError]] = /*...*/
-
-def kafkaCheck(topics: List[Topic]): URIO[AdminClient, Option[StatusError]] = /*...*/
-
-def httpCheck(url: Url): URIO[SttpClient, List[StatusError]]  = /*...*/
-```
-
-^ What does this code do?
-^ What does it mean to check a list of tables? Their existence? Their non-emptiness? Their read access? Or write access? Or both?
-^ What does doing an http check mean? getting a 200 code back? Or just checking the connection?
-
----
-
-# Problem #1: No clarity of Intent
-
-Unconstrained functions
+# Problem #1: Arbitrary functions
 
 [.code-highlight: 1-6,9-11]
 [.code-highlight: 1-7,9-11]
@@ -460,11 +441,11 @@ Unconstrained functions
   .map(_.flatten)
 ```
 
-^On top of that, we are using unconstrained functions. Nothing prevents us from putting there one constant error (CLICK), or even letting the whole computation blow up at runtime(CLICK)
+^One problem is that we are using unconstrained functions. Nothing prevents us from putting there one constant error (CLICK), or even letting the whole computation blow up at runtime(CLICK)
 
 ---
 
-# Problem #2: Divergence Between Implementation and Documentation
+# Problem #2: Divergent Documentation
 
 ```scala
 /**
@@ -478,7 +459,7 @@ Unconstrained functions
 ---
 
 
-# Problem #2: Divergence Between Implementation and Documentation
+# Problem #2: Divergent Documentation
 
 [.code-highlight: 1-8,11-14]
 [.code-highlight: 1-9,11-14]
@@ -505,13 +486,13 @@ Later in time we kept adding functionality, but documentation remained the same
 - Then added HTTP check
 - Documentation remained outdated
 
-^ This is a common issue in complex systems - implementation evolves but documentation lags
+^ This is a common issue in complex systems — implementation evolves, but documentation lags
 
 ---
 
 # Problem #3: Solution Bound to ZIO
 
-- Legacy services use `Future` and Slick
+- Legacy services use `Future` and `Slick`
 - No guarantee of equivalence between implementations
 
 ^ Changing tech stack means rewriting from scratch with no guarantee of correctness
@@ -521,17 +502,18 @@ Later in time we kept adding functionality, but documentation remained the same
 # Orthogonality
 
 ### Address all three problems independently:
-1. Make intent clear
+1. Constrain what we can do
 2. Keep documentation _always_ aligned with code
 3. Make solution stack-agnostic
 
-^ Orthogonal is a language mutuated from Algebra/Geometry, where in the same way orthogonal vector or spaces don't possibly affect each other, here we mean the solving one problem should not affect the solution of the other ones
+^ A quick digression on orthogonality. Orthogonal is a language borrowed from Algebra/Geometry, where in the same way orthogonal vector or spaces don't possibly affect each other, here we mean that solving one problem should not affect the solution of the other ones
 
 ---
 
-### Define a Language that describes the Problem
+### Define a _Language_ to _describe the Problem_
 
 ^The solution is: Start with a language that accurately describes the problem
+
 ---
 
 # Model the problem - not the solution
@@ -549,7 +531,7 @@ object ErrorCondition {
 }
 ``` 
 
-^ We use algebraic data types to create a language that describes our problem domain
+^ Here we want to describe the ways in which our application can fail, or rather the possible ways in which an `ErrorCondition` can arise. An `ErrorCondition` can arise if at least one of these error situations occur. And we want to report all of them
 
 ---
 
@@ -559,15 +541,19 @@ object ErrorCondition {
 sealed trait ErrorCondition
 
 object ErrorCondition { 
+  
   case class Or(left: ErrorCondition, right: ErrorCondition) extends ErrorCondition
 
   case class DBErrorCondition(dbType: DbType, checkTables: List[TableName]) extends ErrorCondition 
 
   case class KafkaErrorCondition(topics: List[Topic]) extends ErrorCondition 
-  case class HttpErrorCondition(url: Url) extends ErrorCondition }
+  
+  case class HttpErrorCondition(url: Url) extends ErrorCondition 
+
+}
 ``` 
 
-^ Now we can combine error conditions using logical operators. Notice we use an `||` because our system fails if one of the conditions is met
+^ Now we can combine error conditions using logical operators. Notice we use an `Or` because our system fails if one of the conditions is met
 
 ---
 
@@ -576,7 +562,13 @@ object ErrorCondition {
 E.g. Error if there is a DB error _or_ an http error
 
 ```scala
-Or(DBErrorCondition(DbType.Postgres, List(TableName("user", "access_token"))), HttpErrorCondition(Url("https://license-check.org/check")))
+Or(
+  DBErrorCondition(
+    DbType.Postgres, 
+    List(TableName("user") TableName("access_token"))
+  ), 
+  HttpErrorCondition(Url("https://license-check.org/check"))
+)
 ```
 
 ---
@@ -589,7 +581,7 @@ sealed trait ErrorCondition { self =>
 }
 ``` 
 
-^ By adding this combinator and some constructors we can make the expression of an error condition much easier and constrained
+^ By adding this combinator and some constructors we can make the expression of an error condition much easier
 
 ---
 
@@ -606,19 +598,54 @@ val errorCondition =
 
 # Flexibility
 
+![right fit](images/healthcheck.png)
+
+```scala
+val errorCondition =
+  
+  dbErrorCondition(DbType.Postgres, 
+    TableName("user"), TableName("access_token")
+  ) ||
+
+    getHttp2xx(Url("https://license-check.org")) ||
+
+    kafkaErrorCondition("messages-topic")
+``` 
+
+^We can combine as many error conditions as we want
+
+---
+
+# Flexibility
+
 ```scala
 val errorCondition =
   dbErrorCondition(dbType, TableName("user"), TableName("access_token")) ||
     getHttp2xx(Url("https://license-check.org")) ||
-    kafkaErrorCondition("messages-topic")
-    
+    kafkaErrorCondition("messages-topic") ||
+    dbErrorCondition(dbType, TableName("documents"))
 ``` 
+
+^We can also add the same condition we used earlier in the data structure
+
 
 ---
 
-# Make a `checkErrors()`
+# Orthogonality
 
-Interpret the data structure into a function 
+### Address all three problems independently:
+1. ✅ Constrain what we can do 
+2. ⬜ Keep documentation _always_ aligned with code
+3. ⬜ Make solution stack-agnostic
+
+^So with this we addressed the first of our concerns.
+^Now let's try to make this thing runnable
+
+---
+
+# Run it: make a `checkErrors()`
+
+Compile the data structure into a function 
 
 ```scala 
 object ZIOInterpreter { 
@@ -642,14 +669,17 @@ object ZIOInterpreter {
 }
 ``` 
 
-^
-Once we have the data structure definition in place, we need to make this runnable, and this is what goes by as _interpretation_. Interpretation is completely free: we have no constraints coming from our DLS about what we need to do with the data structure we built.
-So if we use ZIO and Doobie, the interpreter that, given our health check definition returns the list of status errors, if any
-Note that The compiler will help us ensure we've covered all cases.
+^ Once we have the data structure definition in place, we need to make this runnable, and this is what goes by as _interpretation_ or _compilation_. Interpretation is completely free: we have no constraints coming from our DSL about what we need to do with the data structure we built.
+In this case we use ZIO and doobie, so we the interpreter is what binds our solution to one specific tech stack.
+
+^Note that by using pattern matching, the compiler will help us ensure we've covered all cases.
 
 ---
 
 # Interpreter: the bare minimum
+
+![right fit](images/bare-minimum.png)
+
 
 ```scala
 sealed trait ErrorCondition
@@ -661,14 +691,21 @@ def checkErrors(ec: ErrorCondition): UIO[List[Errors]] =
   
 ```
 
+^At a minimum, an interpreter must match the possible cases of the base sum type, but it can do more. For example it can optimize before running
+
 ---
 
 # Interpreter: optimize before running
 
+![right fit](images/optimized.png)
+
 ```scala
 sealed trait ErrorCondition
 
-private def optimize(ec: ErrorCondition): Algebra = ???
+private def optimize(ec: ErrorCondition): ErrorCondition = 
+ /*
+  * collect all checks of the same type, to minimize the calls
+  */
 
 def checkErrors(ec: ErrorCondition): UIO[List[Errors]] =
   optimize(ec) match {
@@ -681,8 +718,8 @@ def checkErrors(ec: ErrorCondition): UIO[List[Errors]] =
 one possible optimization in our case would be to traverse the data structure, collect all the conditions of the same type in a monoidal way and run just one call to the targeted platform 
 
 ---
-# Benefits: Clarity of Intent
 
+# Benefits: Clarity of Intent
 
 ```scala 
 val errorCondition =
@@ -708,9 +745,10 @@ For a Future/Slick implementation:
     jdbcProfile: slick.jdbc.JdbcProfile, 
     httpClient: SttpFutureBackend[Future, Any]
   )(
-    errorCondition: ErrorCondition )(implicit ec: ExecutionContext): Future[List[StatusError]] = { 
-      // Different implementation, same logic 
-    }
+    errorCondition: ErrorCondition )(implicit ec: ExecutionContext): Future[List[StatusError]] = 
+      errorCondition match {
+        // Different implementation, same logic 
+      }
 ``` 
 
 ^ We can create different interpreters for different tech stacks
@@ -720,7 +758,10 @@ For a Future/Slick implementation:
 # Benefits: Documentation from Code
 
 ```scala 
-def interpret(errorCondition: ErrorCondition): String = ...
+def interpret(errorCondition: ErrorCondition): String =
+  errorCondition match {
+    //render (statefully) all cases
+  }
 ``` 
 
 Output:
@@ -744,11 +785,13 @@ are detected for failure
 
 # Evolution of the Language
 
-New requirement? -> New term in the algebra
+New requirement ⇒ New term in the algebra
 
 ```scala 
 case class RabbitMQErrorCondition(exchanges: List[Exchange]) extends ErrorCondition
-def rabbitMQErrorCondition(topics: Exchange*): ErrorCondition = RabbitMQErrorCondition(topics.toList)
+
+def rabbitMQErrorCondition(topics: Exchange*): ErrorCondition =
+  RabbitMQErrorCondition(topics.toList)
 ``` 
 
 ^ The language evolves as our requirements evolve
@@ -768,15 +811,29 @@ def rabbitMQErrorCondition(topics: Exchange*): ErrorCondition = RabbitMQErrorCon
 
 ---
 
-# A More Complex Example
-## Payment Authorization Rules
+# Orthogonality
 
-The problem: Authorizing payments based on complex, evolving rules
-```
-scala def isBlocked(creditCard: CreditCard, purchase: Purchase): Boolean
+### Address all three problems independently:
+1. ✅ Constrain what we can do
+2. ✅ Keep documentation _always_ aligned with code
+3. ✅ Make solution stack-agnostic
+
+^Going back to our orthogonal triad, we addressed all the three problems.So let's extend this winning approach to a more complex problem
+
+---
+
+# A More Complex Example
+### Payment Authorization Rules
+
+_The problem: Authorizing payments based on complex evolving rules_
+
+<br/>
+
+```scala 
+def isBlocked(creditCard: CreditCard, purchase: Purchase): Boolean
 ``` 
 
-^ Let's look at a more complex real-world example
+^ Here we want a function that blocks transactions, based on defined rules
 
 ---
 
@@ -816,6 +873,8 @@ case class Shop(
 def isBlocked(creditCard: CreditCard, purchase: Purchase): Boolean
 ```
 
+^So we have our function to determine if the usage of a given CC for a given purchase is blocked
+
 ---
 
 # First Requirement
@@ -829,7 +888,7 @@ Naive implementation:
   purchase.shop.country == Country.China && purchase.shop.categories.contains(ShopCategory.Electronics))
 ```
 
-^ But our PO told us that this rule would become more complex over time
+^ But our PO told us that this rule would become more complex over time, so let's prepare our language to model mode complex rules. We follow exactly the same approach we followed in the healthckeck example
 
 ---
 
@@ -839,10 +898,15 @@ Naive implementation:
 sealed trait BlockingRule
 
 case class PurchaseOccursInCountry(country: Country)                  extends BlockingRule
-case class PurchaseCategoryEquals(purchaseCategory: ShopCategory) extends BlockingRule
+
+case class PurchaseCategoryEquals(purchaseCategory: ShopCategory)     extends BlockingRule
+
 case class PurchaseAmountExceeds(amount: Double)                      extends BlockingRule
+
 case class FraudProbabilityExceeds(threshold: Probability)            extends BlockingRule
+
 case class CreditCardFlagged()                                        extends BlockingRule
+
 case class ShopIsBlacklisted()                                        extends BlockingRule
 ```
 
@@ -859,7 +923,7 @@ sealed trait BlockingRule { self =>
 }
 ```
 
-^ We add logical operators to combine rules
+^ We add logical operators to combine rules, and corresponding extra terms in the `BlockingRule` sum type  
 
 ---
 
@@ -867,17 +931,26 @@ sealed trait BlockingRule { self =>
 
 ```scala
 object DSL {
-    private def purchaseInCountry(country: Country): BlockingRule           = BlockingRule.PurchaseOccursInCountry(country)
-    def purchaseCountryIsOneOf(countries: Country*): BlockingRule = countries.map(purchaseInCountry).reduce(_ || _)
-    private def purchaseCategoryEquals(purchaseCategory: ShopCategory): BlockingRule =
-      BlockingRule.PurchaseCategoryEquals(purchaseCategory)
-    def purchaseCategoryIsOneOf(purchaseCategories: ShopCategory*): BlockingRule =
-      purchaseCategories.map(purchaseCategoryEquals).reduce(_ || _)
-    def purchaseAmountExceeds(amount: Double): BlockingRule           = BlockingRule.PurchaseAmountExceeds(amount)
-    def fraudProbabilityExceeds(threshold: Probability): BlockingRule = BlockingRule.FraudProbabilityExceeds(threshold)
-    def creditCardFlagged: BlockingRule                               = BlockingRule.CreditCardFlagged()
-    def shopIsBlacklisted: BlockingRule                               = BlockingRule.ShopIsBlacklisted()
-  }
+  private def purchaseInCountry(country: Country): BlockingRule =
+    BlockingRule.PurchaseOccursInCountry(country)
+  
+  def purchaseCountryIsOneOf(countries: Country*): BlockingRule = 
+    countries.map(purchaseInCountry).reduce(_ || _)
+  
+  private def purchaseCategoryEquals(purchaseCategory: ShopCategory): BlockingRule =
+    BlockingRule.PurchaseCategoryEquals(purchaseCategory)
+  
+  def purchaseCategoryIsOneOf(purchaseCategories: ShopCategory*): BlockingRule =
+    purchaseCategories.map(purchaseCategoryEquals).reduce(_ || _)
+  
+  def purchaseAmountExceeds(amount: Double): BlockingRule           = BlockingRule.PurchaseAmountExceeds(amount)
+  
+  def fraudProbabilityExceeds(threshold: Probability): BlockingRule = BlockingRule.FraudProbabilityExceeds(threshold)
+  
+  def creditCardFlagged: BlockingRule                               = BlockingRule.CreditCardFlagged()
+  
+  def shopIsBlacklisted: BlockingRule                               = BlockingRule.ShopIsBlacklisted()
+}
 ```
 
 ^ Helper methods make our DSL read naturally
@@ -915,10 +988,12 @@ object DSL {
 
 # Documentation from code: Mermaid
 
-In such a  case a graph is better than a long Confluence page
+Sometimes a visual representation is better than any long comment or Confluence page
 
-```
-scala def toMermaidCode(blockingRule: BlockingRule): UIO[String] = // ...
+<br/>
+
+```scala 
+def toMermaidCode(blockingRule: BlockingRule): UIO[String] = // ...
 ``` 
 
 ^ We can also interpret our rules as visual diagrams
@@ -938,6 +1013,9 @@ val br1 =
 ^ Our first rule blocks electronics purchases in China
 After a while our PO comes with a new requirement, we want to block also gambling transactions in UK
 
+^ The second version requires us to block gambling purchases in UK
+he third evolution of our rule will be more complex, and it will combine country, category, amount and a fraud probability threshold
+
 ---
 
 # Rule Evolution: V2
@@ -954,8 +1032,7 @@ val br2 = br1 ||
 
 ![right fit](images/rule_v2.png)
 
-^ Now we also block gambling purchases in UK
-he third evolution of our rule will be more complex, and it will combine country, category, amount and a fraud probability threshold
+^ And the third version adds more complex rules for italy, excluding some categories when the purchase amount is higher than 1000 and the fraud probability for the operation is higher than 80%
 
 ---
 
@@ -989,24 +1066,37 @@ val br3 = br2 ||
 ---
 
 # Benefits
-- **Clear Intent**: Rules express what we want, not how to calculate it
-- **Self-Documenting**: Visual representation directly from code
-- **Technology Independent**: Same rules, different implementations
-- **Evolving Safely**: Compiler catches missing cases
-- **Optimization**: We can transform the rule tree before execution
+- _**Constrain the possibilities**_ - Rules express what we want, not how to calculate it
+- _**Self-Documenting**_ - Visual representation directly from code
+- _**Technology Independent**_ - Same rules, different implementations
+- _**Evolving Safely**_ - Compiler catches missing cases
+- _**Optimization**_ - We can transform the rule tree before execution
 
 ^ These are the key advantages of treating programs as values
 
 ---
 
 # ...and there is more!
-Not only algorithmic problems:
+
+_**Not only algorithmic problems:**_
 
 - ETL processing pipelines
 - Workflows
-- Authorization rules
 - API requests _(Tapir, ZIO-http)_
 - Domain-specific calculations
+
+
+^ This approach works for many different problem domains
+
+---
+
+# ...and there is more!
+
+_**Other benefits:**_
+
+- _Serialize_ your business logic, version, revert
+- _Derive_ frontend
+- _Derive_ a visual _debugger_ for complex logic
 
 ^ This approach works for many different problem domains
 
@@ -1022,14 +1112,29 @@ Not only algorithmic problems:
 - Languages with good sum and product types
 - Pattern matching (data de-construction)
 - And capability to add methods to types
- 
+
+
 ---
 
-# Keep Things Simple
-- No need for higher-kinded types (HKTs)
+# _**Keep it Simple**_
+
+![right fit](images/1x1.png)
+
+
+- No need for HKTs
 - Restrict operations to a limited set
-- Avoid arbitrary functions or map/flatMap
-- (Free) monads are necessary at low level
+- Avoid allowing arbitrary functions or `map`/`flatMap`
+
+^ Simplicity is a feature, not a limitation. `map/flatmap` are typically required in lower level languages, but if you are reasoning about business problems you can just constrain the possible functions you want to allow in your DSL
+
+
+---
+
+# _**Keep it Simple**_
+
+![right fit](images/runar_1.png)
+
+-  Constraints liberate
 
 ^ Simplicity is a feature, not a limitation
 
@@ -1037,7 +1142,7 @@ Not only algorithmic problems:
 
 #Thank You!
 
-Questions?
+_**Questions?**_
 
 
 ^
