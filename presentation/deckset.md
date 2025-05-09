@@ -1,9 +1,9 @@
 autoscale: true
-slidenumbers: false
+slidenumbers: true
 build-lists: true
 list: alignment(left)
 footer: Pierangelo Cecchetto - LambdaConf 2025
-theme: Poster, 2
+theme: Poster, 1
 
 
 # Programs as Values
@@ -22,7 +22,11 @@ theme: Poster, 2
 - What is the system _doing_?
 - What is the system _supposed to do_?
 
-^ The suggestion for this talk comes from a LinkedIn post a friend posted a few months ago, where he rants that more often than not, in a particularly  core system within the organization, we see "Investigation requests" rather than "Bug Reports". Here are a few examples of how such requests look like:
+^The suggestion for this talk comes from post that appeared a few months ago on my LinkedIn timeline. My colleague was describing a sort of "Code archeologist problem".  
+CLICK - This problem manifests itself when we have   more "Investigation requests" rather than "Bug Reports".
+CLICK - And we find ourselves int he awkward situation of aving to answer these 2 questions: What is the system doing? 
+CLICK - What is the system _supposed to do_ ?
+Here are a few examples of how such requests look like:
 
 ---
 
@@ -30,7 +34,9 @@ theme: Poster, 2
 
 ![right fit](images/investigation_1.png)
 
-  System consumes documents from Kafka and produces processing proofs. We see _100 messages going in_, and only _70 coming out_. What happened to the other 30?
+System consumes documents from Kafka and produces processing proofs. We see _100 messages going in_, and only _70 are OK_. 
+  
+Why did _30 go to DLQ_?
 
 ---
 
@@ -39,7 +45,7 @@ theme: Poster, 2
 ![right fit](images/investigation_2.png)
 
 
-In a purchase approval system, I see _30 transactions refused out of 100_, why are they refused?
+In a purchase approval system, I see _30 transactions refused out of 100_. Why are they refused?
 
 ---
 
@@ -68,7 +74,7 @@ To make things even more complicated, none of these situation results in error i
 
 ---
 
-# The Promise of Functional Programming
+# The Promise of FP
 
 ### Focus on the _what_ rather than the _how_
 
@@ -93,8 +99,8 @@ val y = x.map(_ * 2)
 
 ---
 
-#### The Promise of FP in Business Logic Problems
-Health Check
+# The Promise of FP 
+### in Business Logic Problems - Health Check
 
 
 ![right fit](images/healthcheck.png)
@@ -146,8 +152,8 @@ At the end, we collect the error messages produced by each of them into  a singl
 
 ---
 
-#### The Promise of FP in Business Logic Problems
-Health Check
+# The Promise of FP
+### in Business Logic Problems - Health Check
 
 
 ![right fit](images/healthcheck.png)
@@ -164,8 +170,8 @@ Health Check
 
 ---
 
-#### The Promise of FP in Business Logic Problems
-Health Check
+# The Promise of FP
+### in Business Logic Problems - Health Check
 
 
 ![right fit](images/healthcheck.png)
@@ -210,8 +216,8 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
 
 ---
 
-#### The Promise of FP in Business Logic Problems
-Health Check
+# The Promise of FP
+### in Business Logic Problems - Health Check
 
 
 ![right fit](images/healthcheck.png)
@@ -228,8 +234,8 @@ Health Check
 
 ---
 
-#### The Promise of FP in Business Logic Problems
-Health Check
+# The Promise of FP
+### in Business Logic Problems - Health Check
 
 
 ![right fit](images/healthcheck.png)
@@ -273,8 +279,8 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
 
 ---
 
-#### The Promise of FP in Business Logic Problems
-Health Check
+# The Promise of FP
+### in Business Logic Problems - Health Check
 
 
 ![right fit](images/healthcheck.png)
@@ -292,9 +298,8 @@ Health Check
 
 ---
 
-#### The Promise of FP in Business Logic Problems
-Health Check
-
+# The Promise of FP
+### in Business Logic Problems - Health Check
 
 ![right fit](images/healthcheck.png)
 
@@ -337,8 +342,8 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
 
 ---
 
-#### The Promise of FP in Business Logic Problems
-Health Check
+# The Promise of FP
+### in Business Logic Problems - Health Check
 
 ![right fit](images/healthcheck.png)
 
@@ -356,8 +361,8 @@ Health Check
 
 ---
 
-#### The Promise of FP in Business Logic Problems
-Health Check
+# The Promise of FP
+### in Business Logic Problems - Health Check
 
 
 ![right fit](images/healthcheck.png)
@@ -425,8 +430,6 @@ This code is Purely functional, but is it really focused on the what rather than
 [.code-highlight: 1-6,9-11]
 [.code-highlight: 1-7,9-11]
 [.code-highlight: 1-8,9-11]
-[.code-highlight: 1-13,9-11]
-
 ```scala
  def checkErrors() = ZIO
   .collectAll(
@@ -461,9 +464,8 @@ This code is Purely functional, but is it really focused on the what rather than
 
 # Problem #2: Divergent Documentation
 
-[.code-highlight: 1-8,11-14]
-[.code-highlight: 1-9,11-14]
-[.code-highlight: 1-10,11-14]
+[.code-highlight: 1-8,10-14]
+[.code-highlight: 1-9,10-14]
 ```scala
 /**
  * Check db connectivity
@@ -486,7 +488,7 @@ Later in time we kept adding functionality, but documentation remained the same
 - Then added HTTP check
 - Documentation remained outdated
 
-^ This is a common issue in complex systems — implementation evolves, but documentation lags
+^ This is a common issue in complex systems — implementation evolves, but documentation lags. Documentation can be code documentation, or Confluence/Knowledge base documentation
 
 ---
 
@@ -495,7 +497,10 @@ Later in time we kept adding functionality, but documentation remained the same
 - Legacy services use `Future` and `Slick`
 - No guarantee of equivalence between implementations
 
-^ Changing tech stack means rewriting from scratch with no guarantee of correctness
+^ Changing tech stack means rewriting from scratch with no guarantee of correctness. 
+Now while changing tech stack is not something we do very often, 
+a problem such as this one where we want to define one way to check the health of our systems, 
+should cover all our services in the same way, both recent services developed in ZIO, and legacy ones that use Futures/Akka
 
 ---
 
@@ -557,7 +562,7 @@ object ErrorCondition {
 
 ---
 
-# Build data structures that model our problem
+# Data structures for our problem
 
 E.g. Error if there is a DB error _or_ an http error
 
@@ -571,14 +576,29 @@ Or(
 )
 ```
 
+^We don't want to be building these things by hand, this is not very straightforward. Imagine having 3 conditions to put together
+
 ---
 
 # Make it ergonomic
 
+
+[.code-highlight: 1-3]
+[.code-highlight: 1-13]
 ```scala
 sealed trait ErrorCondition { self =>
   def ||(other: ErrorCondition): ErrorCondition = Or(self, other)
 }
+
+object Dsl:
+  def dbErrorCondition(dbType: DbType, checkTables: TableName*): ErrorCondition =
+    DBErrorCondition(dbType, checkTables.toList)
+  
+  def kafkaErrorCondition(topics: Topic*): ErrorCondition =
+    KafkaErrorCondition(topics.toList)
+  
+  def getHttp2xx(url: Url): ErrorCondition = 
+    HttpErrorCondition(url)
 ``` 
 
 ^ By adding this combinator and some constructors we can make the expression of an error condition much easier
@@ -587,9 +607,13 @@ sealed trait ErrorCondition { self =>
 
 # Make it ergonomic
 
+![right fit](images/healthcheck_no_kafka.png)
+
 ```scala
 val errorCondition =
-  dbErrorCondition(dbType, TableName("user"), TableName("access_token")) ||
+  dbErrorCondition(DbType.Postgres, 
+    TableName("user"), TableName("access_token")
+  ) ||
     getHttp2xx(Url("https://license-check.org"))
     
 ``` 
@@ -602,13 +626,10 @@ val errorCondition =
 
 ```scala
 val errorCondition =
-  
   dbErrorCondition(DbType.Postgres, 
     TableName("user"), TableName("access_token")
   ) ||
-
     getHttp2xx(Url("https://license-check.org")) ||
-
     kafkaErrorCondition("messages-topic")
 ``` 
 
@@ -618,9 +639,13 @@ val errorCondition =
 
 # Flexibility
 
+![right fit](images/healthcheck.png)
+
 ```scala
 val errorCondition =
-  dbErrorCondition(dbType, TableName("user"), TableName("access_token")) ||
+  dbErrorCondition(DbType.Postgres,
+    TableName("user"), TableName("access_token")
+  ) ||
     getHttp2xx(Url("https://license-check.org")) ||
     kafkaErrorCondition("messages-topic") ||
     dbErrorCondition(dbType, TableName("documents"))
