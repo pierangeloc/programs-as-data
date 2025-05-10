@@ -12,6 +12,8 @@ theme: Poster, 1
 
 ### Write code and don't get lost
 
+^Hello everyone, and welcome to my talk on "Programs as values", or how to write code and don't get lost
+
 ---
 
 # The Code archeologist problem
@@ -64,8 +66,9 @@ In a purchase approval system, I see _30 transactions refused out of 100_. Why a
 "We were supposed to see 8 shop locations on Google Maps but we see only 6. Why is that?"
 
 ---
+# And to make things more interesting...
 
-### No errors in the logs
+- No error messages in our logs
 
 ![right fit](images/no_errors_logs_doubt.png)
 
@@ -95,7 +98,9 @@ val x = List(1, 2, 3)
 val y = x.map(_ * 2)
 ``` 
 
-^ FP promises to let us focus on intent rather than the internal mechanism, and it succeeds in cases like this. We can appreciate how the functional approach is clear and easy to understand. But sometimes we still miss this goal, for example when we model a solution for a simple technical problem, such as establishing the health state of a running service 
+^ FP promises to let us focus on intent rather than the internal mechanism, and it succeeds in cases like this. We can appreciate how the functional approach is clear and easy to understand. 
+
+^But While FP succeeds in simple cases like this, it doesn't keep the promises when we deal with more complex situations, for example when we model a solution for a healthcheck of a running service 
 
 ---
 
@@ -146,8 +151,7 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
 }
 ``` 
 
-^ Here is a straightforward implementation for the healthcheck, One function checks the DB, one checks the kafka connection, and one checks the external http connection.
-At the end, we collect the error messages produced by each of them into  a single list
+^ Here is a straightforward implementation for the healthcheck, One function checks the DB using ZIO and Doobie -> CLICK -> CLICK,
 
 
 ---
@@ -214,6 +218,8 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
 }
 ``` 
 
+^One that checks the kafka connection using ZIO-kafka -> CLICK -> CLICK
+
 ---
 
 # The Promise of FP
@@ -231,6 +237,8 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
      * ZIO-kafka code
      */
 ```
+
+^ and one checks the external http connection using zio and sttp -> CLICK -> CLICK
 
 ---
 
@@ -295,6 +303,8 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
      */
 }
 ``` 
+
+^At the end, we collect the error messages produced by each of them into  a single list
 
 ---
 
@@ -361,11 +371,17 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
 
 ---
 
-# The Promise of FP
-### in Business Logic Problems - Health Check
+# Purely functional code
+
+[.column]
 
 
-![right fit](images/healthcheck.png)
+- Immutable values
+- Strongly typed - `neotype`
+- Pure functional effect system - `ZIO`
+
+
+[.column]
 
 ```scala 
 def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, List[StatusError]] = {
@@ -403,25 +419,58 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
 }
 ```
 
----
-
-### Purely functional code
-
-- Immutable values
-- Strongly typed - `neotype`
-- Pure functional effect system - `ZIO`
 
 
 ^The code we just showed is purely functional code, written in a functional effect system, but to understand what is being done, the developer must check the implementation of these methods
 
 ---
 
-### Purely functional code
+# Purely functional code
+
+[.column]
 
 Is it focused on the _how_ or on the _what_?
 
+[.column]
+
+```scala 
+def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, List[StatusError]] = {
+  def dbCheck(
+    dbType: DbType, 
+    checkTables: List[TableName]
+  ): ZIO[Transactor[Task], Nothing, List[StatusError]] =
+    /*
+     * Doobie code    
+     */
+
+  def kafkaCheck(
+    topics: List[Topic]
+  ): URIO[AdminClient, Option[StatusError]] =
+    /*
+     * ZIO-kafka code
+     */
+
+  def httpCheck(
+    url: Url
+  ): URIO[SttpClient, List[StatusError]] =
+    /*
+     * Sttp code  
+     */
+
+  ZIO
+    .collectAll(
+      List(
+        dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2"))),
+        kafkaCheck(List(Topic("topic1"), Topic("topic2"))),
+        httpCheck(Url("http://localhost:8080"))
+      )
+    )
+    .map(_.flatten)
+}
+```
 ^
-This code is Purely functional, but is it really focused on the what rather than the how? I think this suffers from some limitations
+This code is Purely functional, but is it really focused on the what rather than the how? 
+I think this suffers from some limitations
 
 ---
 
@@ -437,7 +486,7 @@ This code is Purely functional, but is it really focused on the what rather than
       dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2"))),
       kafkaCheck(List(Topic("topic1"), Topic("topic2"))),
       httpCheck(Url("http://localhost:8080")),
-      ZIO.succeed(List(StatusError("Random error")))
+      ZIO.succeed(List(StatusError("Fourth error")))
       ZIO.die(new RuntimeException("Error in the fifth check"))
     )
   )
@@ -511,17 +560,17 @@ should cover all our services in the same way, both recent services developed in
 2. Keep documentation _always_ aligned with code
 3. Make solution stack-agnostic
 
-^ A quick digression on orthogonality. Orthogonal is a language borrowed from Algebra/Geometry, where in the same way orthogonal vector or spaces don't possibly affect each other, here we mean that solving one problem should not affect the solution of the other ones
+^ A quick digression on orthogonality. Orthogonality means that solving one problem should not affect the solution of the other ones
 
 ---
 
-### Define a _Language_ to _describe the Problem_
+### Define a _Language_ to _describe our solution_
 
-^The solution is: Start with a language that accurately describes the problem
+^The solution is: Start with a language that accurately describes the solution
 
 ---
 
-# Model the problem - not the solution
+# Model the solution 
 
 ```scala 
 sealed trait ErrorCondition
@@ -536,7 +585,7 @@ object ErrorCondition {
 }
 ``` 
 
-^ Here we want to describe the ways in which our application can fail, or rather the possible ways in which an `ErrorCondition` can arise. An `ErrorCondition` can arise if at least one of these error situations occur. And we want to report all of them
+^ Here we want to describe the ways in which our application can fail, or rather the possible ways in which an `ErrorCondition` can occur. An `ErrorCondition` can occur if at least one of these error situations occur. And we want to report all of them
 
 ---
 
@@ -562,26 +611,27 @@ object ErrorCondition {
 
 ---
 
-# Data structures for our problem
-
-E.g. Error if there is a DB error _or_ an http error
+# Describe solutions through Data structures
 
 ```scala
 Or(
   DBErrorCondition(
     DbType.Postgres, 
-    List(TableName("user") TableName("access_token"))
+    List(TableName("user"), TableName("access_token"))
   ), 
-  HttpErrorCondition(Url("https://license-check.org/check"))
+  HttpErrorCondition(
+    Url("https://license-check.org/check")
+  )
 )
 ```
 
-^We don't want to be building these things by hand, this is not very straightforward. Imagine having 3 conditions to put together
+^Here we have one error condition made of an OR of 2 possible conditions, one about DB and one about Http service.
+We don't want to be building these things by hand, this is not very handy. Already putting 3 conditions together would make this pretty unreadable.
+So let's make it ergonomic
 
 ---
 
 # Make it ergonomic
-
 
 [.code-highlight: 1-3]
 [.code-highlight: 1-13]
@@ -602,6 +652,7 @@ object Dsl:
 ``` 
 
 ^ By adding this combinator and some constructors we can make the expression of an error condition much easier
+CLICK and by adding some constructors we make things even easier. These constructors can be built also using a builder pattern limited just to building that specific term
 
 ---
 
@@ -618,6 +669,8 @@ val errorCondition =
     
 ``` 
 
+^with these tools in our belt, we can describe the previous error condition as follows
+
 ---
 
 # Flexibility
@@ -633,7 +686,7 @@ val errorCondition =
     kafkaErrorCondition("messages-topic")
 ``` 
 
-^We can combine as many error conditions as we want
+^Then we can add another one taking care of kafka
 
 ---
 
@@ -651,7 +704,7 @@ val errorCondition =
     dbErrorCondition(dbType, TableName("documents"))
 ``` 
 
-^We can also add the same condition we used earlier in the data structure
+^And another one for the DB, they don't have to be necessarily all together
 
 
 ---
@@ -694,8 +747,12 @@ object ZIOInterpreter {
 }
 ``` 
 
-^ Once we have the data structure definition in place, we need to make this runnable, and this is what goes by as _interpretation_ or _compilation_. Interpretation is completely free: we have no constraints coming from our DSL about what we need to do with the data structure we built.
-In this case we use ZIO and doobie, so we the interpreter is what binds our solution to one specific tech stack.
+^ Once we have the data structure definition in place, we need to make this runnable, and this is what goes by as _interpretation_ or _compilation_. 
+
+^Interpretation is completely free: we have no constraints coming from our DSL about what we need to do with the data structure we built.
+
+^In this implementation, we're using ZIO and Doobie, which means the interpreter serves as the connection point that links our abstract solution to this specific tech stack
+
 
 ^Note that by using pattern matching, the compiler will help us ensure we've covered all cases.
 
@@ -744,23 +801,7 @@ one possible optimization in our case would be to traverse the data structure, c
 
 ---
 
-# Benefits: Clarity of Intent
-
-```scala 
-val errorCondition =
-  dbErrorCondition(dbType, TableName("user"), TableName("access_token")) ||
-    getHttp2xx(Url("https://license-check.org")) ||
-    kafkaErrorCondition("messages-topic")
-
-``` 
-
-TODO: Make it even better with some constructors such as `checkDb(type).tablesExist(tables...)`
-
-^ This reads almost like natural language, making the intent clear. Our DSL is now clearly conveying what we want to do:
-
----
-
-# Benefits: Technology Independence
+# Benefits: Tech stack Independence
 
 For a Future/Slick implementation:
 
@@ -782,12 +823,32 @@ For a Future/Slick implementation:
 
 # Benefits: Documentation from Code
 
+[.column]
+
+```scala 
+def interpret(errorCondition: ErrorCondition): String =
+  errorCondition match {
+    //render (statefully) all cases
+  }
+```
+
+[.column]
+
+_
+
+---
+
+# Benefits: Documentation from Code
+
+[.column]
+
 ```scala 
 def interpret(errorCondition: ErrorCondition): String =
   errorCondition match {
     //render (statefully) all cases
   }
 ``` 
+[.column]
 
 Output:
 
@@ -805,6 +866,20 @@ are detected for failure
 ``` 
 
 ^ Generate documentation directly from the code structure
+^Here we are generating a String, we could generate a LaTeX document, or push a markdown to our Git Repo, there are endless possibilities here 
+
+---
+
+# Orthogonality
+
+### Address all three problems independently:
+1. ✅ Constrain what we can do
+2. ✅ Keep documentation _always_ aligned with code
+3. ✅ Make solution stack-agnostic
+
+^With this in place, our documentation is _always_ aligned with the error condition we decide to detect.
+^We also proved that we can adapt our solution to the stack we want to use
+
 
 ---
 
@@ -833,17 +908,6 @@ def rabbitMQErrorCondition(topics: Exchange*): ErrorCondition =
 ``` 
 
 ^ The compiler tells us when our interpreters need updating
-
----
-
-# Orthogonality
-
-### Address all three problems independently:
-1. ✅ Constrain what we can do
-2. ✅ Keep documentation _always_ aligned with code
-3. ✅ Make solution stack-agnostic
-
-^Going back to our orthogonal triad, we addressed all the three problems.So let's extend this winning approach to a more complex problem
 
 ---
 
@@ -913,7 +977,9 @@ Naive implementation:
   purchase.shop.country == Country.China && purchase.shop.categories.contains(ShopCategory.Electronics))
 ```
 
-^ But our PO told us that this rule would become more complex over time, so let's prepare our language to model mode complex rules. We follow exactly the same approach we followed in the healthckeck example
+^Here is our first requirement, with a very straightforward implementation.
+^But our PO told us that this rule would become more complex over time, so let's prepare our language to model mode complex rules.
+^We follow exactly the same approach we followed in the healthckeck example
 
 ---
 
@@ -1035,11 +1101,9 @@ val br1 =
 
 ![right fit](images/rule_v1.png)
 
-^ Our first rule blocks electronics purchases in China
+^And here is our first rule, to  block electronics purchases in China.
 After a while our PO comes with a new requirement, we want to block also gambling transactions in UK
-
-^ The second version requires us to block gambling purchases in UK
-he third evolution of our rule will be more complex, and it will combine country, category, amount and a fraud probability threshold
+^CLICK
 
 ---
 
@@ -1091,8 +1155,8 @@ val br3 = br2 ||
 ---
 
 # Benefits
-- _**Constrain the possibilities**_ - Rules express what we want, not how to calculate it
-- _**Self-Documenting**_ - Visual representation directly from code
+- _**Constrain the possibilities**_ - Define a minimum set of things we can do, and build from there 
+- _**Self-Documenting**_ - Text/Visual representation directly from code
 - _**Technology Independent**_ - Same rules, different implementations
 - _**Evolving Safely**_ - Compiler catches missing cases
 - _**Optimization**_ - We can transform the rule tree before execution
@@ -1117,51 +1181,57 @@ _**Not only algorithmic problems:**_
 
 # ...and there is more!
 
-_**Other benefits:**_
+_**Further developments:**_
 
-- _Serialize_ your business logic, version, revert
+- _Serialize/Deserialize_ your business logic, version, revert
 - _Derive_ frontend
 - _Derive_ a visual _debugger_ for complex logic
 
-^ This approach works for many different problem domains
+^ Further development based on this approach would include: 
+- serialize/deserialize the logic, so we can version it, revert, deploy
+- We can write an interpreter of our data structure even in another language. Imagine you serialize your structure in json and you interpret it in React
+- One application of this would be to derive a visual debugger for our business logic
 
 ---
 
 # Scala featues shine...
 - Compiler exhaustive checks
 - Phantom types to make unwanted constructions impossible
+- `given`s to limit possible combinations
 
 ---
 
 # ...but all you need is data
 - Languages with good sum and product types
 - Pattern matching (data de-construction)
-- And capability to add methods to types
+- Add methods to types
 
 
 ---
 
 # _**Keep it Simple**_
-
-![right fit](images/1x1.png)
-
 
 - No need for HKTs
 - Restrict operations to a limited set
-- Avoid allowing arbitrary functions or `map`/`flatMap`
+- We don't always need monads in high-level problems
+
 
 ^ Simplicity is a feature, not a limitation. `map/flatmap` are typically required in lower level languages, but if you are reasoning about business problems you can just constrain the possible functions you want to allow in your DSL
 
-
 ---
 
-# _**Keep it Simple**_
+# _**Conservation Principle**_
 
-![right fit](images/runar_1.png)
+[.column]
 
--  Constraints liberate
+![fit](images/conservation%20principle%202.png)
 
-^ Simplicity is a feature, not a limitation
+"Easy" = easy to understand, document, adapt
+
+[.column]
+
+![fit](images/runar_1.png)
+
 
 ---
 

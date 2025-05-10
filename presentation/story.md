@@ -187,12 +187,10 @@ About point 3, if we have a service that is using Futures and Slick rather than 
 
 ```scala
 def interpret( db: slick.jdbc.JdbcBackend#Database,
-                 jdbcProfile: slick.jdbc.JdbcProfile,
-                 httpClient: SttpFutureBackend[Future, Any])(
-                 errorCondition: ErrorCondition
-               )(implicit
-                 ec: ExecutionContext
-               ): Future[List[StatusError]] = {
+    jdbcProfile: slick.jdbc.JdbcProfile,
+    httpClient: SttpFutureBackend[Future, Any])(
+    errorCondition: ErrorCondition
+  )(implicit ec: ExecutionContext): Future[List[StatusError]] = 
   errorCondition match {
     case ErrorCondition.DBErrorCondition(DbType.Postgres, checkTables) =>
         SlickFutureDbHealthCheck.checkPostgresTables(db,jdbcProfile, checkTables),
@@ -218,7 +216,6 @@ def interpret( db: slick.jdbc.JdbcBackend#Database,
       } yield leftErrors ++ rightErrors
 
   }
-}
 ```
 
 Let's now tackle point 2, the divergence between documentation and implementation. Rather than documenting our code, or writing a Confluence page doomed to oblivion, let's interpret our blocking rule as a String
