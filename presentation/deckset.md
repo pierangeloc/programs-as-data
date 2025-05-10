@@ -549,10 +549,8 @@ Later in time we kept adding functionality, but documentation remained the same
 - Legacy services use `Future` and `Slick`
 - No guarantee of equivalence between implementations
 
-^ Changing tech stack means rewriting from scratch with no guarantee of correctness. 
-Now while changing tech stack is not something we do very often, 
-a problem such as this one where we want to define one way to check the health of our systems, 
-should cover all our services in the same way, both recent services developed in ZIO, and legacy ones that use Futures/Akka TODO: REphrase with AI, this sucks
+^ Migrating to a different technology stack typically requires a complete reimplementation without inherent assurances of functional equivalence. While such migrations are infrequent, a comprehensive health monitoring solution should function consistently across our entire ecosystem—seamlessly integrating with both our modern services built on ZIO and our established systems using Futures and Akka.
+
 
 ---
 
@@ -1204,25 +1202,25 @@ _**Further developments:**_
 ---
 
 # Scala  shines...
-- Compiler exhaustive checks
-- Phantom types to make unwanted constructions impossible
-- `given`s to limit possible combinations
+- Compiler _exhaustive checks_
+- _Phantom types_ to make unwanted constructions impossible
+- _`given`_ to limit possible combinations
 
 ---
 
 # ...but all you need is data
-- Languages with good sum and product types
-- Pattern matching (data de-construction)
-- Add methods to types
+- Languages with good _ADT_
+- Pattern matching (data _de-construction_)
+- Data with _methods_ for ergonomics 
 
 
 ---
 
 # _**Keep it Simple**_
 
-- No need for HKTs
-- Restrict operations to a limited set
-- We don't always need monads in high-level problems
+- No need for _HKTs_ unless you really necessary
+- _Restrict operations_ to a limited set
+- We _don't always need monads_ in high-level problems
 
 
 ^ Simplicity is a feature, not a limitation. We don't need to learn free monads, natural transformations etc to implement this. 
@@ -1232,11 +1230,11 @@ Moreover, `map/flatmap` are typically required in lower level languages, but if 
 
 # _**Conservation Principle**_
 
-![right fit](images/conservation%20principle%202.png)
+![right fit](images/conservation%20principle%203.png)
 
- "Easy"
+ **Clear**
  = 
- easy to understand, document, adapt
+ easy to _understand_, _document_, _evolve_
 
 ---
 
