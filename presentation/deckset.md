@@ -376,14 +376,6 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
 
 [.column]
 
-
-- Immutable values
-- Strongly typed - `neotype`
-- Pure functional effect system - `ZIO`
-
-
-[.column]
-
 ```scala 
 def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, List[StatusError]] = {
   def dbCheck(
@@ -419,6 +411,15 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
     .map(_.flatten)
 }
 ```
+
+[.column]
+
+
+- _Immutable_ values
+- Strongly _typed_ - `neotype`
+- _Functional effect_ system - `ZIO`
+
+
 
 
 
@@ -428,9 +429,6 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
 
 # Purely functional code
 
-[.column]
-
-Is it focused on the _how_ or on the _what_?
 
 [.column]
 
@@ -469,6 +467,10 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
     .map(_.flatten)
 }
 ```
+[.column]
+
+Is it focused on the _how_ or on the _what_?
+
 ^
 This code is Purely functional, but is it really focused on the what rather than the how? 
 I think this suffers from some limitations
@@ -547,7 +549,7 @@ Later in time we kept adding functionality, but documentation remained the same
 # Problem #3: Solution Bound to ZIO
 
 - Legacy services use `Future` and `Slick`
-- No guarantee of equivalence between implementations
+- No guarantee of _equivalence_ between implementations
 
 ^ Migrating to a different technology stack typically requires a complete reimplementation without inherent assurances of functional equivalence. While such migrations are infrequent, a comprehensive health monitoring solution should function consistently across our entire ecosystem—seamlessly integrating with both our modern services built on ZIO and our established systems using Futures and Akka.
 
