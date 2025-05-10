@@ -25,8 +25,8 @@ theme: Poster, 1
 - What is the system _supposed to do_?
 
 ^The suggestion for this talk comes from post that appeared a few months ago on my LinkedIn timeline. My colleague was describing a sort of "Code archeologist problem".  
-CLICK - This problem manifests itself when we have   more "Investigation requests" rather than "Bug Reports".
-CLICK - And we find ourselves int he awkward situation of aving to answer these 2 questions: What is the system doing? 
+CLICK - This problem manifests itself when we have   more "Investigation requests" rather than "Bug Reports". This means that not even the business people are sure of what they are reporting
+CLICK - And we find ourselves int he awkward situation of having to answer these 2 questions: What is the system doing? 
 CLICK - What is the system _supposed to do_ ?
 Here are a few examples of how such requests look like:
 
@@ -55,7 +55,7 @@ In a purchase approval system, I see _30 transactions refused out of 100_. Why a
 
 ![right fit](images/investigation_3_1.png)
 
-"We were supposed to see 8 shop locations on Google Maps but we see only 6. Why is that?"
+"We were supposed to see _8 shop locations_ on Google Maps but we see _only 6_. Why is that?"
 
 ---
 
@@ -63,7 +63,7 @@ In a purchase approval system, I see _30 transactions refused out of 100_. Why a
 
 ![right fit](images/investigation_3_2.png)
 
-"We were supposed to see 8 shop locations on Google Maps but we see only 6. Why is that?"
+"We were supposed to see _8 shop locations_ on Google Maps but we see _only 6_. Why is that?"
 
 ---
 # And to make things more interesting...
@@ -151,7 +151,8 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
 }
 ``` 
 
-^ Here is a straightforward implementation for the healthcheck, One function checks the DB using ZIO and Doobie -> CLICK -> CLICK,
+^ We have a system connected to Kafka, to Database and to an external application via http. How would a healthcheck look like? 
+Here is a straightforward implementation for the healthcheck, One function checks the DB using ZIO and Doobie -> CLICK -> CLICK,
 
 
 ---
@@ -421,7 +422,7 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
 
 
 
-^The code we just showed is purely functional code, written in a functional effect system, but to understand what is being done, the developer must check the implementation of these methods
+^The code we just showed is purely functional code, strictly typed, written in a functional effect system, but to understand what is being done, the developer must check the implementation of these methods
 
 ---
 
@@ -493,7 +494,8 @@ I think this suffers from some limitations
   .map(_.flatten)
 ```
 
-^One problem is that we are using unconstrained functions. Nothing prevents us from putting there one constant error (CLICK), or even letting the whole computation blow up at runtime(CLICK)
+^One problem is that the door is open to put any function in the collect phase. 
+Nothing prevents us from putting there one constant error (CLICK), or even letting the whole computation blow up at runtime(CLICK)
 
 ---
 
@@ -506,7 +508,8 @@ I think this suffers from some limitations
   def checkErrors() =
     dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2")))
 ```
-^ this was the first version of our function, with a proper documentation
+^Another problem is that we might have divergent documentation. 
+This was the first version of our function, with a proper documentation
 
 ---
 
@@ -549,7 +552,7 @@ Later in time we kept adding functionality, but documentation remained the same
 ^ Changing tech stack means rewriting from scratch with no guarantee of correctness. 
 Now while changing tech stack is not something we do very often, 
 a problem such as this one where we want to define one way to check the health of our systems, 
-should cover all our services in the same way, both recent services developed in ZIO, and legacy ones that use Futures/Akka
+should cover all our services in the same way, both recent services developed in ZIO, and legacy ones that use Futures/Akka TODO: REphrase with AI, this sucks
 
 ---
 
@@ -978,8 +981,8 @@ Naive implementation:
 ```
 
 ^Here is our first requirement, with a very straightforward implementation.
-^But our PO told us that this rule would become more complex over time, so let's prepare our language to model mode complex rules.
-^We follow exactly the same approach we followed in the healthckeck example
+But our PO told us that this rule would become more complex over time, so let's prepare our language to model mode complex rules.
+We follow exactly the same approach we followed in the healthckeck example
 
 ---
 
@@ -1020,6 +1023,8 @@ sealed trait BlockingRule { self =>
 
 # User-Friendly Constructors
 
+[.code-highlight: 1-21]
+[.code-highlight: 2-7]
 ```scala
 object DSL {
   private def purchaseInCountry(country: Country): BlockingRule =
@@ -1044,16 +1049,19 @@ object DSL {
 }
 ```
 
-^ Helper methods make our DSL read naturally
+^ Helper methods make our DSL read naturally. Notice that we can also define some constructors based on combination of existing terms
 
 ---
 
 # Rule Interpreter
 
 ```scala
-  def isBlocked(rule: BlockingRule, ccFlaggedService: CreditCardFlaggedService, fraudScoreService: FraudScoreService, shopRepository: ShopRepository)(
-      cc: CreditCard, p: Purchase
-  ): UIO[Boolean] = {
+  def isBlocked(
+    ccFlaggedService: CreditCardFlaggedService,
+    fraudScoreService: FraudScoreService, 
+    shopRepository: ShopRepository)(
+    rule: BlockingRule
+  )(cc: CreditCard, p: Purchase): UIO[Boolean] = {
     def eval(rule: BlockingRule): UIO[Boolean] = rule match {
       case BlockingRule.PurchaseOccursInCountry(country) =>
         purchaseOccursInCountry(BlockingRule.PurchaseOccursInCountry(country))(input)
@@ -1073,13 +1081,12 @@ object DSL {
   }
 ```
 
-^ Our interpreter evaluates the rule against actual services
+^ The execution interpreter needs some dependencies in order to evaluate the rule.
 
 ---
 
 # Documentation from code: Mermaid
 
-Sometimes a visual representation is better than any long comment or Confluence page
 
 <br/>
 
@@ -1087,7 +1094,8 @@ Sometimes a visual representation is better than any long comment or Confluence 
 def toMermaidCode(blockingRule: BlockingRule): UIO[String] = // ...
 ``` 
 
-^ We can also interpret our rules as visual diagrams
+^
+Sometimes a visual representation is better than any long comment or Confluence page. So we  decided to interpret our rules as visual diagrams
 
 ---
 
@@ -1150,7 +1158,8 @@ val br3 = br2 ||
 ![right fit](images/rule_v3.png)
 
 
-^ Our third version adds complex rules for Italy
+^ Our third version adds complex rules for Italy.
+This automatic documentation has become so successful that now business writes stories in terms of these pictures
 
 ---
 
@@ -1194,7 +1203,7 @@ _**Further developments:**_
 
 ---
 
-# Scala featues shine...
+# Scala  shines...
 - Compiler exhaustive checks
 - Phantom types to make unwanted constructions impossible
 - `given`s to limit possible combinations
@@ -1216,22 +1225,26 @@ _**Further developments:**_
 - We don't always need monads in high-level problems
 
 
-^ Simplicity is a feature, not a limitation. `map/flatmap` are typically required in lower level languages, but if you are reasoning about business problems you can just constrain the possible functions you want to allow in your DSL
+^ Simplicity is a feature, not a limitation. We don't need to learn free monads, natural transformations etc to implement this. 
+Moreover, `map/flatmap` are typically required in lower level languages, but if you are reasoning about business problems you can just constrain the possible functions you want to allow in your DSL
 
 ---
 
 # _**Conservation Principle**_
 
-[.column]
+![right fit](images/conservation%20principle%202.png)
 
-![fit](images/conservation%20principle%202.png)
+ "Easy"
+ = 
+ easy to understand, document, adapt
 
-"Easy" = easy to understand, document, adapt
+---
 
-[.column]
+# _**Conservation Principle**_
 
-![fit](images/runar_1.png)
+![right fit](images/runar_1.png)
 
+_Constraints Liberate, Liberties Constrain_ — **Runar Bjarnason**
 
 ---
 
