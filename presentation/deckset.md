@@ -12,7 +12,7 @@ theme: Poster, 1
 
 ### Write code and don't get lost
 
-^Hello everyone, and welcome to my talk on "Programs as values", or how to write code and don't get lost
+^Hello LambdaConf! Welcome to my talk on "Programs as values", or how to write code without getting lost
 
 ---
 
@@ -423,7 +423,7 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
 
 
 
-^The code we just showed is purely functional code, strictly typed, written in a functional effect system, but to understand what is being done, the developer must check the implementation of these methods
+^The code we just showed is purely functional code, strictly typed, written in a functional effect system, but is it focused on the what or on the how?
 
 ---
 
@@ -893,8 +893,8 @@ New requirement ⇒ New term in the algebra
 ```scala 
 case class RabbitMQErrorCondition(exchanges: List[Exchange]) extends ErrorCondition
 
-def rabbitMQErrorCondition(topics: Exchange*): ErrorCondition =
-  RabbitMQErrorCondition(topics.toList)
+def rabbitMQErrorCondition(exchanges: Exchange*): ErrorCondition =
+  RabbitMQErrorCondition(exchanges.toList)
 ``` 
 
 ^ The language evolves as our requirements evolve
@@ -930,6 +930,8 @@ def isBlocked(creditCard: CreditCard, purchase: Purchase): Boolean
 ---
 
 # Domain Model
+
+[.column]
 ```scala 
  case class CreditCard(
   id: Id,
@@ -939,7 +941,10 @@ def isBlocked(creditCard: CreditCard, purchase: Purchase): Boolean
   expiryDate: ExpiryDate,
   issuedInCountry: Country
 )
+```
 
+[.column]
+```scala
 case class Purchase(
   id: Id,
   creditCardId: Id,
@@ -977,7 +982,8 @@ Naive implementation:
 
 ```scala
  def isBlocked(creditCard: CreditCard, purchase: Purchase):  Boolean =
-  purchase.shop.country == Country.China && purchase.shop.categories.contains(ShopCategory.Electronics))
+  purchase.shop.country == Country.China && 
+    purchase.shop.categories.contains(ShopCategory.Electronics))
 ```
 
 ^Here is our first requirement, with a very straightforward implementation.
@@ -1193,7 +1199,6 @@ _**Not only algorithmic problems:**_
 _**Further developments:**_
 
 - _Serialize/Deserialize_ your business logic, version, revert
-- _Derive_ frontend
 - _Derive_ a visual _debugger_ for complex logic
 
 ^ Further development based on this approach would include: 
@@ -1208,6 +1213,8 @@ _**Further developments:**_
 - _Phantom types_ to make unwanted constructions impossible
 - _`given`_ to limit possible combinations
 
+^Clearly a language like Scala shines in this programming style
+
 ---
 
 # ...but all you need is data
@@ -1215,15 +1222,13 @@ _**Further developments:**_
 - Pattern matching (data _de-construction_)
 - Data with _methods_ for ergonomics 
 
-
 ---
 
 # _**Keep it Simple**_
 
-- No need for _HKTs_ unless you really necessary
+- No need for _HKTs_ unless it is really necessary
 - _Restrict operations_ to a limited set
 - We _don't always need monads_ in high-level problems
-
 
 ^ Simplicity is a feature, not a limitation. We don't need to learn free monads, natural transformations etc to implement this. 
 Moreover, `map/flatmap` are typically required in lower level languages, but if you are reasoning about business problems you can just constrain the possible functions you want to allow in your DSL
