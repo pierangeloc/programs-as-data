@@ -23,7 +23,7 @@ object SimpleExample extends ZIOAppDefault:
     )
   )
 
-  def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =
+  def run: ZIO[Any & ZIOAppArgs & Scope, Any, Any] =
     (zio.Console.printLine("Performing Healthcheck as configured:") *>
       zio.Console.printLine(DocumentationInterpreter.interpret(Example1.errorCondition))) /**>
       
