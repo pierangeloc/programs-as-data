@@ -32,10 +32,16 @@ object FreeMonadTest {
   def f: String => String = ???
 
   def myLittleProgram: DBMonad[Unit] = for {
-    _    <- create[String]("123-456", "Daniel")
+    _    <- create[String]("123-456", "Pierangelo")
     name <- get[String]("123-456")
     res  <- Free.pure(f(name))
     _    <- create[String]("567", name.toUpperCase())
     _    <- delete("123-456")
   } yield ()
+
+  def boom(s: String): String = throw new Exception("Blowing up")
+
+  val anotherProgram = create[String]("123-345", "Pierangelo").flatMap { _ =>
+    get[String](boom("123-345"))
+  }
 }

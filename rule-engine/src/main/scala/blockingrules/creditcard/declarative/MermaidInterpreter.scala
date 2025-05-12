@@ -13,6 +13,9 @@ import java.util.zip.GZIPOutputStream
 
 object MermaidInterpreter {
 
+  object MermaidCode extends Newtype[String]
+  type MermaidCode = MermaidCode.Type
+
   enum Shape {
     case Square
     case RoundedSquare
@@ -114,12 +117,12 @@ object MermaidInterpreter {
     } yield labelledTree
   }
 
-  def toMermaidCode(blockingRule: BlockingRule): UIO[String] = {
+  def toMermaidCode(blockingRule: BlockingRule): UIO[MermaidCode] = {
     import MermaidInterpreter.Instances.given
     for {
       labelledTree <- label(blockingRule)
       mermaidCode  <- labelledToMermaidCode(labelledTree)
-    } yield mermaidCode
+    } yield MermaidCode(mermaidCode)
   }
 
   private def labelledToMermaidCode[A: MermaidRenderable](tree: Tree[Labelled[A]]): UIO[String] = {
@@ -174,8 +177,8 @@ object MermaidInterpreter {
 
   }
 
-  def mermaidLink(mermaidCode: String): String = {
-    val escapedCode  = mermaidCode.replace("\"", "\\\"").replace("\n", "\\n")
+  def mermaidLink(mermaidCode: MermaidCode): String = {
+    val escapedCode  = mermaidCode.unwrap.replace("\"", "\\\"").replace("\n", "\\n")
     val mermaidGraph = s"""{"code": "$escapedCode", "mermaid": {"theme": "default"} }"""
     println(s"mermaidGraph:\n$mermaidGraph\n")
     val inflatedBytes = mermaidGraph.getBytes(StandardCharsets.UTF_8)

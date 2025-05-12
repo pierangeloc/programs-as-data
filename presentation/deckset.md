@@ -142,7 +142,10 @@ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, Lis
   ZIO
     .collectAll(
       List(
-        dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2"))),
+        dbCheck(
+         DbType.MySql, 
+         List(TableName("table1"), TableName("table2"))
+        ),
         kafkaCheck(List(Topic("topic1"), Topic("topic2"))),
         httpCheck(Url("http://localhost:8080"))
       )
@@ -483,8 +486,8 @@ I think this suffers from some limitations
 [.code-highlight: 1-7,9-11]
 [.code-highlight: 1-8,9-11]
 ```scala
- def checkErrors() = ZIO
-  .collectAll(
+ def checkErrors(): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, List[StatusError]] =
+  ZIO.collectAll(
     List(
       dbCheck(DbType.MySql, List(TableName("table1"), TableName("table2"))),
       kafkaCheck(List(Topic("topic1"), Topic("topic2"))),
@@ -730,7 +733,7 @@ Compile the data structure into a function
 
 ```scala 
 object ZIOInterpreter { 
-  def checkErrors(errorCondition: ErrorCondition) = 
+  def checkErrors(errorCondition: ErrorCondition): ZIO[Transactor[Task] & AdminClient & SttpClient, Nothing, List[StatusError]] = 
     
     errorCondition match
     
@@ -903,11 +906,11 @@ def rabbitMQErrorCondition(exchanges: Exchange*): ErrorCondition =
 
 # Compiler-Enforced Consistency
 ```
-[warn] 17 |    errorCondition match
-[warn]    |    ^^^^^^^^^^^^^^
-[warn]    |match may not be exhaustive.
-[warn]    |
-[warn]    |It would fail on pattern case: domainmodeling.healthcheck.ErrorCondition.RabbitMQErrorCondition(_)
+[error] 17 |    errorCondition match
+[error]    |    ^^^^^^^^^^^^^^
+[error]    |match may not be exhaustive.
+[error]    |
+[error]    |It would fail on pattern case: domainmodeling.healthcheck.ErrorCondition.RabbitMQErrorCondition(_)
 ``` 
 
 ^ The compiler tells us when our interpreters need updating
@@ -949,7 +952,7 @@ case class Purchase(
   id: Id,
   creditCardId: Id,
   amount: Amount,
-  shop: Shop
+  shopId: ShopId
 )
 
 case class Shop(
@@ -1097,7 +1100,13 @@ object DSL {
 <br/>
 
 ```scala 
-def toMermaidCode(blockingRule: BlockingRule): UIO[String] = // ...
+def toMermaidCode(blockingRule: BlockingRule): UIO[MermaidCode] = {
+  import MermaidInterpreter.Instances.given
+  for {
+    labelledTree <- label(blockingRule)
+    mermaidCode  <- labelledToMermaidCode(labelledTree)
+  } yield MermaidCode(mermaidCode)
+}
 ``` 
 
 ^
@@ -1210,8 +1219,7 @@ _**Further developments:**_
 
 # Scala  shines...
 - Compiler _exhaustive checks_
-- _Phantom types_ to make unwanted constructions impossible
-- _`given`_ to limit possible combinations
+- _`given`_ & _phantom types_ to make unwanted constructions impossible
 
 ^Clearly a language like Scala shines in this programming style
 
@@ -1220,7 +1228,7 @@ _**Further developments:**_
 # ...but all you need is data
 - Languages with good _ADT_
 - Pattern matching (data _de-construction_)
-- Data with _methods_ for ergonomics 
+- Data types with _methods_ for ergonomics 
 
 ---
 
@@ -1258,7 +1266,4 @@ _Constraints Liberate, Liberties Constrain_ — **Runar Bjarnason**
 _**Questions?**_
 
 
-^
-TODO's:
-mention Runar's talk
-Introduce a conservation principle: Expressivity + Reasonability = Constant. The more I can express with a language, the more difficult it is to reason about what I'm doing with that language.
+^Thank you, are there any questions?
